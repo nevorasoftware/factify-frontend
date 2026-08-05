@@ -36,7 +36,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       }
     } catch (err: any) {
       console.error('Login error:', err);
-      setError(err.response?.data?.error || 'Credenciales incorrectas o error en el servidor');
+      const msg = err.response?.data?.error || err.message || 'Error de conexión con el backend';
+      setError(`Error: ${msg}`);
     } finally {
       setIsLoading(false);
     }
