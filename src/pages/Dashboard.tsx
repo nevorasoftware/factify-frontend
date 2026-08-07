@@ -5,9 +5,10 @@ import {
   FileText, Receipt, FileSpreadsheet, FileWarning,
   Search, AlertTriangle, Truck, DollarSign,
   FileCode, GitBranch, HeartHandshake, UserCheck,
-  Plus, CheckCircle, Clock, FileBox, Play, FileUp, Loader2
+  Plus, CheckCircle, Clock, FileBox, Play, FileUp, Loader2,
+  Mail, Download
 } from 'lucide-react';
-import { obtenerDashboardStats, obtenerDteInfo } from '../services/dte.service';
+import { obtenerDashboardStats, obtenerDteInfo, reenviarCorreoDte } from '../services/dte.service';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -41,6 +42,8 @@ export const Dashboard: React.FC = () => {
   const [selectedDte, setSelectedDte] = useState<any | null>(null);
   const [modalLoading, setModalLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [resendingEmail, setResendingEmail] = useState<boolean>(false);
+  const [resendMessage, setResendMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
     async function loadStats() {
@@ -70,6 +73,7 @@ export const Dashboard: React.FC = () => {
     try {
       setModalLoading(true);
       setIsModalOpen(true);
+      setResendMessage(null);
       const res = await obtenerDteInfo(codigoGeneracion);
       if (res.success) {
         setSelectedDte(res.dte);
@@ -544,6 +548,20 @@ export const Dashboard: React.FC = () => {
                       </h3>
                     </div>
                   </div>
+
+                  {resendMessage && (
+                    <div className={`p-4 rounded-xl border flex items-center justify-between text-xs font-semibold ${
+                      resendMessage.type === 'success'
+                        ? 'bg-green-50 text-green-750 border-green-200'
+                        : 'bg-red-50 text-red-750 border-red-200'
+                    }`}>
+                      <span className="flex items-center gap-2">
+                        {resendMessage.type === 'success' ? <CheckCircle size={16} className="text-green-600 shrink-0" /> : <AlertTriangle size={16} className="text-red-600 shrink-0" />}
+                        {resendMessage.text}
+                      </span>
+                      <button onClick={() => setResendMessage(null)} className="text-gray-400 hover:text-gray-600 font-bold ml-2">&times;</button>
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className="text-center text-gray-500">No se pudieron cargar los datos del documento.</p>
@@ -551,16 +569,91 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setSelectedDte(null);
-                }}
-                className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg font-semibold border border-gray-200 transition-colors shadow-xs"
-              >
-                Cerrar
-              </button>
+            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex flex-wrap justify-between items-center gap-3">
+              <div className="flex items-center gap-2">
+                {selectedDte && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const token = localStorage.getItem('token');
+                        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
+                        window.open(`${baseUrl}/dtes/${selectedDte.codigoGeneracion}/pdf?token=${token}`, '_blank');
+                      }}
+                      className="bg-white hover:bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold border border-gray-200 flex items-center gap-1.5 transition-colors shadow-xs"
+                      title="Ver o descargar PDF oficial"
+                    >
+                      <Download size={14} className="text-primary-600" /> Ver PDF
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const token = localStorage.getItem('token');
+                        const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:4001/api';
+                        window.open(`${baseUrl}/dtes/${selectedDte.codigoGeneracion}/json?token=${token}`, '_blank');
+                      }}
+                      className="bg-white hover:bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-xs font-bold border border-gray-200 flex items-center gap-1.5 transition-colors shadow-xs"
+                      title="Descargar archivo JSON oficial"
+                    >
+                      <Download size={14} className="text-indigo-600" /> JSON
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                {selectedDte && (
+                  <button
+                    disabled={resendingEmail}
+                    onClick={async () => {
+                      try {
+                        setResendingEmail(true);
+                        setResendMessage(null);
+                        const res = await reenviarCorreoDte(selectedDte.codigoGeneracion);
+                        if (res.success) {
+                          setResendMessage({
+                            type: 'success',
+                            text: res.message || '¡Correo reenviado exitosamente con PDF y JSON adjuntos!'
+                          });
+                        } else {
+                          setResendMessage({
+                            type: 'error',
+                            text: res.error || 'No se pudo enviar el correo.'
+                          });
+                        }
+                      } catch (err: any) {
+                        setResendMessage({
+                          type: 'error',
+                          text: err.response?.data?.error || err.message || 'Fallo al enviar correo.'
+                        });
+                      } finally {
+                        setResendingEmail(false);
+                      }
+                    }}
+                    className="bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+                  >
+                    {resendingEmail ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" /> Reenviando...
+                      </>
+                    ) : (
+                      <>
+                        <Mail size={14} /> Reenviar Correo
+                      </>
+                    )}
+                  </button>
+                )}
+
+                <button
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setSelectedDte(null);
+                    setResendMessage(null);
+                  }}
+                  className="bg-white hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-xs font-semibold border border-gray-200 transition-colors shadow-xs"
+                >
+                  Cerrar
+                </button>
+              </div>
             </div>
           </div>
         </div>

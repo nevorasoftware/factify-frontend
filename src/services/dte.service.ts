@@ -152,3 +152,9 @@ export async function obtenerDteInfo(codigoGeneracion: string): Promise<any> {
   return response.data;
 }
 
+// Reenviar correo con PDF y JSON adjuntos
+export async function reenviarCorreoDte(codigoGeneracion: string, correoDestino?: string): Promise<any> {
+  const response = await api.post(`/dtes/${codigoGeneracion}/reenviar-correo`, { correoDestino });
+  return response.data;
+}
+
