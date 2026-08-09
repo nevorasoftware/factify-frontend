@@ -6,9 +6,9 @@ import {
   Search, AlertTriangle, Truck, DollarSign,
   FileCode, GitBranch, HeartHandshake, UserCheck,
   Plus, CheckCircle, Clock, FileBox, Play, FileUp, Loader2,
-  Mail, Download
+  Mail, Download, MessageCircle
 } from 'lucide-react';
-import { obtenerDashboardStats, obtenerDteInfo, reenviarCorreoDte } from '../services/dte.service';
+import { obtenerDashboardStats, obtenerDteInfo, reenviarCorreoDte, reenviarWhatsappDte } from '../services/dte.service';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -43,6 +43,7 @@ export const Dashboard: React.FC = () => {
   const [modalLoading, setModalLoading] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [resendingEmail, setResendingEmail] = useState<boolean>(false);
+  const [resendingWhatsapp, setResendingWhatsapp] = useState<boolean>(false);
   const [resendMessage, setResendMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   useEffect(() => {
@@ -638,6 +639,51 @@ export const Dashboard: React.FC = () => {
                     ) : (
                       <>
                         <Mail size={14} /> Reenviar Correo
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {selectedDte && (
+                  <button
+                    disabled={resendingWhatsapp || resendingEmail}
+                    onClick={async () => {
+                      try {
+                        setResendingWhatsapp(true);
+                        setResendMessage(null);
+                        const res = await reenviarWhatsappDte(selectedDte.codigoGeneracion);
+                        if (res.success) {
+                          setResendMessage({
+                            type: 'success',
+                            text: res.message || '¡Documento enviado/preparado para WhatsApp!'
+                          });
+                          if (res.whatsappWebUrl) {
+                            window.open(res.whatsappWebUrl, '_blank');
+                          }
+                        } else {
+                          setResendMessage({
+                            type: 'error',
+                            text: res.error || 'No se pudo enviar por WhatsApp.'
+                          });
+                        }
+                      } catch (err: any) {
+                        setResendMessage({
+                          type: 'error',
+                          text: err.response?.data?.error || err.message || 'Fallo al procesar envío por WhatsApp.'
+                        });
+                      } finally {
+                        setResendingWhatsapp(false);
+                      }
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 transition-colors shadow-sm cursor-pointer"
+                  >
+                    {resendingWhatsapp ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" /> Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <MessageCircle size={14} /> Reenviar WhatsApp
                       </>
                     )}
                   </button>

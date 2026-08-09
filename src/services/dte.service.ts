@@ -158,3 +158,9 @@ export async function reenviarCorreoDte(codigoGeneracion: string, correoDestino?
   return response.data;
 }
 
+// Reenviar WhatsApp con PDF y JSON
+export async function reenviarWhatsappDte(codigoGeneracion: string, telefonoDestino?: string): Promise<any> {
+  const response = await api.post(`/dtes/${codigoGeneracion}/reenviar-whatsapp`, { telefonoDestino });
+  return response.data;
+}
+
