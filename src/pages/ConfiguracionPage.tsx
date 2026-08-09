@@ -92,6 +92,44 @@ export const ConfiguracionPage: React.FC = () => {
     }
   };
 
+  const handleLogoUpload = (file: File) => {
+    if (file.size > 10 * 1024 * 1024) {
+      setToast({ type: 'error', message: 'El archivo excede el tamaño máximo permitido (10MB)' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 500;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const resizedBase64 = canvas.toDataURL('image/png');
+          setLogoUrl(resizedBase64);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleDteToggle = (code: string) => {
     if (dtesVisibles.includes(code)) {
       setDtesVisibles(dtesVisibles.filter(c => c !== code));
@@ -232,15 +270,7 @@ export const ConfiguracionPage: React.FC = () => {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          if (file.size > 2 * 1024 * 1024) {
-                            setToast({ type: 'error', message: 'El archivo excede el tamaño máximo permitido (2MB)' });
-                            return;
-                          }
-                          const reader = new FileReader();
-                          reader.onloadend = () => {
-                            setLogoUrl(reader.result as string);
-                          };
-                          reader.readAsDataURL(file);
+                          handleLogoUpload(file);
                         }
                       }}
                     />
