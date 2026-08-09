@@ -79,9 +79,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       {/* Active Emisor Profile Info */}
       {emisor && (
         <div className="px-4 py-3 mx-4 my-3 bg-slate-950/50 border border-slate-800/80 rounded-xl flex items-center gap-3 flex-shrink-0">
-          <div className="bg-slate-800 text-blue-400 p-2 rounded-lg">
-            <User size={16} />
-          </div>
+          {emisor.logoUrl ? (
+            <img src={emisor.logoUrl} alt="Logo" className="w-9 h-9 object-contain rounded-lg bg-white p-0.5 flex-shrink-0 border border-slate-700" />
+          ) : (
+            <div className="bg-slate-800 text-blue-400 p-2 rounded-lg flex-shrink-0">
+              <User size={16} />
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-bold text-slate-100 truncate">
               {emisor.nombreComercial || emisor.razonSocial || 'Mi Empresa'}

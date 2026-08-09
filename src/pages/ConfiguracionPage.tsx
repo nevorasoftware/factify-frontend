@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Shield, Settings, Eye, CheckSquare, Square, Info } from 'lucide-react';
+import { Save, Shield, Settings, Eye, CheckSquare, Square, Info, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import { Toast } from '../components/Common/Toast';
 import { CATALOGOS } from '../utils/catalogs';
@@ -17,6 +17,7 @@ export const ConfiguracionPage: React.FC = () => {
   const [descActividad, setDescActividad] = useState('');
   const [telefono, setTelefono] = useState('');
   const [correo, setCorreo] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   
   // Direccion
   const [departamento, setDepartamento] = useState('01');
@@ -65,6 +66,7 @@ export const ConfiguracionPage: React.FC = () => {
         setDescActividad(data.descActividad || '');
         setTelefono(data.telefono || '');
         setCorreo(data.correo || '');
+        setLogoUrl(data.logoUrl || null);
         
         const dir = data.direccion || {};
         setDepartamento(dir.departamento || '01');
@@ -112,7 +114,8 @@ export const ConfiguracionPage: React.FC = () => {
         dtesVisibles,
         ambiente,
         codEstablecimientoMh,
-        codPuntoVentaMh
+        codPuntoVentaMh,
+        logoUrl
       };
 
       if (pwdMh.trim() !== '') payload.pwdMh = pwdMh;
@@ -127,6 +130,7 @@ export const ConfiguracionPage: React.FC = () => {
           nrc,
           razonSocial,
           nombreComercial,
+          logoUrl,
           dtesVisibles,
           ambiente
         };
@@ -161,7 +165,7 @@ export const ConfiguracionPage: React.FC = () => {
         </div>
         <div>
           <h1 className="text-xl font-bold text-gray-900">Configuración del Perfil / Emisor</h1>
-          <p className="text-xs text-gray-500 mt-1">Configura los datos fiscales del contribuyente, credenciales de Hacienda y documentos visibles.</p>
+          <p className="text-xs text-gray-500 mt-1">Configura los datos fiscales del contribuyente, logo de la empresa, credenciales de Hacienda y documentos visibles.</p>
         </div>
       </div>
 
@@ -191,6 +195,64 @@ export const ConfiguracionPage: React.FC = () => {
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Nombre Comercial</label>
               <input className="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" value={nombreComercial} onChange={e => setNombreComercial(e.target.value)} />
             </div>
+
+            {/* Selector y Subida de Logo */}
+            <div className="md:col-span-2 pt-2 border-t border-gray-100">
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                Logo del Emisor (Se muestra en PDF DTE y en el menú principal)
+              </label>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                {logoUrl ? (
+                  <div className="relative group flex-shrink-0">
+                    <img src={logoUrl} alt="Logo Emisor" className="w-24 h-24 object-contain bg-white border border-gray-200 rounded-xl p-1.5 shadow-sm" />
+                    <button
+                      type="button"
+                      onClick={() => setLogoUrl(null)}
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white p-1 rounded-full shadow-md transition-colors"
+                      title="Eliminar logo"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 bg-gray-100 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-400 flex-shrink-0">
+                    <ImageIcon size={28} />
+                    <span className="text-[10px] mt-1">Sin Logo</span>
+                  </div>
+                )}
+
+                <div className="flex-1">
+                  <label className="inline-flex items-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-blue-200 cursor-pointer transition-colors shadow-xs">
+                    <Upload size={16} />
+                    <span>{logoUrl ? 'Cambiar Imagen de Logo' : 'Subir Logo (PNG/JPG)'}</span>
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > 2 * 1024 * 1024) {
+                            setToast({ type: 'error', message: 'El archivo excede el tamaño máximo permitido (2MB)' });
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setLogoUrl(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                  <p className="text-[11px] text-gray-500 mt-2 leading-relaxed">
+                    Se recomienda una imagen PNG/JPG de hasta 500x500 px (Máx. 2MB).
+                    El logo se incluirá automáticamente en la esquina superior izquierda de los documentos tributarios en PDF y en la barra de usuario.
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Código Actividad Económica</label>
               <input className="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors font-mono" value={codActividad} onChange={e => setCodActividad(e.target.value)} required />
