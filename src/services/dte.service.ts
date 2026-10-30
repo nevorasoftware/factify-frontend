@@ -1,12 +1,17 @@
 // src/services/dte.service.ts
 import { api } from './api';
 import { Receptor, Item, DocumentoRelacionado, EnvioResponse } from '../types';
+import { leerModoContingencia } from '../utils/contingencia';
 
 // Helper para adjuntar el Emisor configurado a todas las peticiones
 function withEmisor(data: any) {
   const saved = localStorage.getItem('emisorConfig');
   if (saved) {
     data.emisor = JSON.parse(saved);
+  }
+  const modo = leerModoContingencia();
+  if (modo) {
+    data.contingencia = { tipoContingencia: modo.tipoContingencia, motivoContin: modo.motivoContin };
   }
   return data;
 }
@@ -122,21 +127,26 @@ export async function enviarComprobanteDonacion(data: {
 }
 
 // Evento de Invalidación
-export async function enviarEventoInvalidacion(data: {
-  identificacionDocumento: any;
-  motivo: any;
-  idEnvio?: number;
-}): Promise<EnvioResponse> {
+export async function enviarEventoInvalidacion(data: any): Promise<EnvioResponse> {
   const response = await api.post('/evento-invalidacion', data);
   return response.data;
 }
 
 // Evento de Contingencia
-export async function enviarEventoContingencia(data: {
-  contingencia: any;
-  idEnvio?: number;
-}): Promise<EnvioResponse> {
+export async function enviarEventoContingencia(data: any): Promise<any> {
   const response = await api.post('/evento-contingencia', data);
+  return response.data;
+}
+
+// Documentos transitorios y eventos de contingencia
+export async function obtenerEstadoContingencia(): Promise<any> {
+  const response = await api.get('/contingencia/estado');
+  return response.data;
+}
+
+// Transmite los documentos ya informados en un evento de contingencia
+export async function transmitirContingencia(): Promise<any> {
+  const response = await api.post('/contingencia/transmitir', {});
   return response.data;
 }
 

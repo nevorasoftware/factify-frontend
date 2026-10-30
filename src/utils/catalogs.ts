@@ -92,11 +92,11 @@ export const CATALOGOS = {
   
   // CAT-005 Tipo Contingencia
   tipoContingencia: [
-    { code: '1', name: 'No disponibilidad sistema MH' },
-    { code: '2', name: 'No disponibilidad sistema emisor' },
-    { code: '3', name: 'Falla Internet' },
-    { code: '4', name: 'Falla energía eléctrica' },
-    { code: '5', name: 'Otro' }
+    { code: 1, name: 'No disponibilidad de sistema del MH' },
+    { code: 2, name: 'No disponibilidad de sistema del emisor' },
+    { code: 3, name: 'Falla en el suministro de servicio de Internet del Emisor' },
+    { code: 4, name: 'Falla en el suministro de energía eléctrica del emisor' },
+    { code: 5, name: 'Otro' }
   ],
   
   // CAT-026 Tipo Donación

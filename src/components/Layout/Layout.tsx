@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { Menu, FileText } from 'lucide-react';
+import { Menu, FileText, AlertTriangle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { escucharModoContingencia, leerModoContingencia } from '../../utils/contingencia';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,6 +10,9 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [modoContingencia, setModoContingencia] = useState(leerModoContingencia());
+
+  useEffect(() => escucharModoContingencia(() => setModoContingencia(leerModoContingencia())), []);
 
   // Información básica del emisor para la barra superior móvil
   const emisorStr = localStorage.getItem('emisor');
@@ -50,6 +55,12 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content Area */}
       <main className="lg:pl-64 min-h-[calc(100vh-3.5rem)] lg:min-h-screen transition-all">
+        {modoContingencia && (
+          <Link to="/contingencia" className="flex items-center gap-2 bg-amber-500 text-white text-sm font-semibold px-4 py-2">
+            <AlertTriangle size={16} />
+            Contingencia activa: los documentos se firman sin transmitir a Hacienda. Ver contingencia.
+          </Link>
+        )}
         <div className="p-3 sm:p-5 lg:p-6 max-w-7xl mx-auto">
           {children}
         </div>
