@@ -9,6 +9,7 @@ import { enviarFacturaSujetoExcluido } from '../services/dte.service';
 import { Receptor, Item, Pago } from '../types';
 import { CATALOGOS } from '../utils/catalogs';
 import { formatCurrency, numeroALetras } from '../utils/formatters';
+import { mensajeError, mensajeRechazo } from '../utils/errores';
 
 const round2 = (num: number) => Number((Math.round((num + Number.EPSILON) * 100) / 100).toFixed(2));
 
@@ -18,7 +19,7 @@ const initialReceptor: Receptor = {
   nombre: '',
   codActividad: null,
   descActividad: null,
-  direccion: { departamento: '06', municipio: '14', complemento: '' },
+  direccion: { departamento: '', municipio: '', distrito: '', complemento: '' },
   telefono: '',
   correo: ''
 };
@@ -66,18 +67,7 @@ export const FacturaSujetoExcluidoPage: React.FC = () => {
     const data = {
       receptor,
       cuerpoDocumento: items,
-      resumen: {
-        totalCompra: subtotal,
-        totalDescu: 0,
-        subTotal: subtotal,
-        reteRenta: renta,
-        ivaRete1: 0,
-        totalPagar: total,
-        totalLetras: `${Math.floor(total)} ${((total % 1) * 100).toFixed(0)}/100 DOLARES USD`,
-        condicionOperacion,
-        pagos: pagosConMonto,
-        observaciones: null
-      }
+      resumen: { reteRenta: renta, condicionOperacion, pagos: pagosConMonto }
     };
 
     try {
@@ -87,10 +77,10 @@ export const FacturaSujetoExcluidoPage: React.FC = () => {
         setResultado(response);
         limpiarFormulario();
       } else {
-        setToast({ type: 'error', message: response.error || 'Error al enviar DTE Sujeto Excluido' });
+        setToast({ type: 'error', message: mensajeRechazo(response, 'Error al enviar DTE Sujeto Excluido') });
       }
     } catch (error: any) {
-      setToast({ type: 'error', message: error.message || 'Error de conexión' });
+      setToast({ type: 'error', message: mensajeError(error) });
     } finally {
       setLoading(false);
     }
@@ -117,11 +107,11 @@ export const FacturaSujetoExcluidoPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Datos del Sujeto Excluido (Proveedor)</h2>
-          <ReceptorForm receptor={receptor} onChange={setReceptor} />
+          <ReceptorForm receptor={receptor} onChange={setReceptor} catalogoVigente />
         </div>
 
         <div className="card">
-          <ItemsTable items={items} onChange={setItems} />
+          <ItemsTable items={items} onChange={setItems} sinIva />
         </div>
 
         {/* CARD DE TOTALES Y CONDICIÓN DE PAGO (Diseño premium sin IVA) */}

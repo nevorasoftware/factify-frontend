@@ -1,25 +1,26 @@
 // src/pages/ComprobanteLiquidacionPage.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Send, Plus, Trash2, Search, CheckCircle, RefreshCw } from 'lucide-react';
 import { ReceptorForm } from '../components/Forms/ReceptorForm';
 import { Toast } from '../components/Common/Toast';
 import { LoadingSpinner } from '../components/Common/LoadingSpinner';
 import { enviarComprobanteLiquidacion, obtenerDteInfo } from '../services/dte.service';
 import { Receptor } from '../types';
+import { mensajeError, mensajeRechazo } from '../utils/errores';
 
 interface LiquidacionItem {
   numItem: number;
   tipoDte: string;
   tipoGeneracion: number;
   numeroDocumento: string;
-  fechaGeneracion: string;
+  fechaEmision: string;
   ventaNoSuj: number;
   ventaExenta: number;
   ventaGravada: number;
   exportaciones: number;
   tributos: string[] | null;
   ivaItem: number;
-  obsItem: string;
+  observaciones: string;
   searching?: boolean;
   linkedDte?: any;
 }
@@ -30,7 +31,7 @@ const initialReceptor: Receptor = {
   nombre: '',
   codActividad: null,
   descActividad: null,
-  direccion: { departamento: '06', municipio: '14', complemento: '' },
+  direccion: { departamento: '', municipio: '', distrito: '', complemento: '' },
   telefono: '',
   correo: ''
 };
@@ -110,23 +111,17 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
     tipoDte: '03',
     tipoGeneracion: 2,
     numeroDocumento: '',
-    fechaGeneracion: new Date().toISOString().split('T')[0],
+    fechaEmision: new Date().toISOString().split('T')[0],
     ventaNoSuj: 0,
     ventaExenta: 0,
     ventaGravada: 0,
     exportaciones: 0,
     tributos: ['20'],
     ivaItem: 0,
-    obsItem: 'Liquidación de operación'
+    observaciones: 'Liquidación de operación'
   }]);
   
-  const [extension, setExtension] = useState<any>({
-    nombEntrega: 'NEVORA SOFTWARE S.A.S. DE C.V.',
-    docuEntrega: '0623-180526-114-9',
-    nombRecibe: 'REPRESENTANTE RECEPTOR',
-    docuRecibe: '0614-161017-108-1',
-    observaciones: 'Liquidación de operaciones comerciales'
-  });
+  const [observaciones, setObservaciones] = useState('');
 
   const [resultado, setResultado] = useState<any>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -141,33 +136,20 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
   const total = totalExportacion + subTotalVentas + ivaPerci;
   const totalLetras = numeroALetras(total);
 
-  // Auto-llenar responsables del emisor guardado
-  useEffect(() => {
-    const saved = localStorage.getItem('emisorConfig');
-    if (saved) {
-      const emisor = JSON.parse(saved);
-      setExtension((prev: any) => ({
-        ...prev,
-        nombEntrega: emisor.nombre || prev.nombEntrega,
-        docuEntrega: emisor.nit || prev.docuEntrega
-      }));
-    }
-  }, []);
-
   const addItem = () => {
     setItems([...items, {
       numItem: items.length + 1,
       tipoDte: '03',
       tipoGeneracion: 2,
       numeroDocumento: '',
-      fechaGeneracion: new Date().toISOString().split('T')[0],
+      fechaEmision: new Date().toISOString().split('T')[0],
       ventaNoSuj: 0,
       ventaExenta: 0,
       ventaGravada: 0,
       exportaciones: 0,
       tributos: ['20'],
       ivaItem: 0,
-      obsItem: 'Liquidación de operación'
+      observaciones: 'Liquidación de operación'
     }]);
   };
 
@@ -211,7 +193,7 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
         
         // Auto-completar fila
         newItems[idx].tipoDte = doc.tipoDte || '03';
-        newItems[idx].fechaGeneracion = doc.fechaEmision;
+        newItems[idx].fechaEmision = doc.fechaEmision;
         
         // Asignar monto a gravado o exportación según el tipo
         if (doc.tipoDte === '11') {
@@ -226,7 +208,7 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
           newItems[idx].tributos = ['20'];
         }
 
-        newItems[idx].obsItem = `Liquidación s/ DTE original ${doc.numeroControl}`;
+        newItems[idx].observaciones = `Liquidación s/ DTE original ${doc.numeroControl}`;
         newItems[idx].linkedDte = doc;
 
         setItems(newItems);
@@ -236,20 +218,14 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
         if (doc.cliente && !receptor.nombre) {
           setReceptor({
             nit: doc.cliente.numDocumento.length === 14 ? doc.cliente.numDocumento : '',
-            nrc: doc.cliente.nrc || '000000-0',
+            nrc: doc.cliente.nrc || '',
             nombre: doc.cliente.nombre,
             codActividad: doc.cliente.codActividad || null,
             descActividad: doc.cliente.descActividad || null,
-            direccion: { departamento: '06', municipio: '14', complemento: doc.cliente.direccion || '' },
+            direccion: { departamento: '', municipio: '', distrito: '', complemento: doc.cliente.direccion || '' },
             telefono: doc.cliente.telefono || '',
             correo: doc.cliente.correo || ''
           });
-
-          setExtension((prev: any) => ({
-            ...prev,
-            nombRecibe: doc.cliente.nombre,
-            docuRecibe: doc.cliente.numDocumento
-          }));
         }
       } else {
         setToast({ type: 'error', message: 'No se encontró el documento original en la base de datos.' });
@@ -269,61 +245,22 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
     setLoading(true);
     setResultado(null);
 
-    const receptorData = {
-      nit: (receptor.nit || '').trim(),
-      nrc: (receptor.nrc || '').trim(),
-      nombre: receptor.nombre,
-      codActividad: receptor.codActividad || "46900",
-      descActividad: receptor.descActividad || "Comercio al por mayor no especializado",
-      nombreComercial: receptor.nombre || "Receptor Comercial",
-      direccion: receptor.direccion,
-      telefono: receptor.telefono || "2222-2222",
-      correo: receptor.correo || "correo@receptor.com"
-    };
-
     const cuerpoData = items.map(item => ({
       numItem: item.numItem,
       tipoDte: item.tipoDte,
       tipoGeneracion: Number(item.tipoGeneracion),
       numeroDocumento: item.numeroDocumento.trim().toUpperCase(),
-      fechaGeneracion: item.fechaGeneracion,
+      fechaEmision: item.fechaEmision,
       ventaNoSuj: Number(item.ventaNoSuj) || 0,
       ventaExenta: Number(item.ventaExenta) || 0,
       ventaGravada: Number(item.ventaGravada) || 0,
       exportaciones: Number(item.exportaciones) || 0,
       tributos: ivaPerci > 0 && Number(item.ventaGravada) > 0 ? ['20'] : null,
       ivaItem: Number(item.ivaItem) || 0,
-      obsItem: item.obsItem
+      observaciones: item.observaciones
     }));
 
-    const data = {
-      receptor: receptorData,
-      cuerpoDocumento: cuerpoData,
-      resumen: {
-        totalNoSuj: Number(totalNoSuj.toFixed(2)),
-        totalExenta: Number(totalExenta.toFixed(2)),
-        totalGravada: Number(totalGravada.toFixed(2)),
-        totalExportacion: Number(totalExportacion.toFixed(2)),
-        subTotalVentas: Number(subTotalVentas.toFixed(2)),
-        ivaPerci: Number(ivaPerci.toFixed(2)),
-        total: Number(total.toFixed(2)),
-        totalLetras: totalLetras,
-        condicionOperacion: 1, // Contado
-        tributos: ivaPerci > 0 ? [{
-          codigo: "20",
-          descripcion: "Impuesto al Valor Agregado 13%",
-          valor: Number(ivaPerci.toFixed(2))
-        }] : null
-      },
-      extension: {
-        nombEntrega: extension.nombEntrega,
-        docuEntrega: extension.docuEntrega,
-        nombRecibe: extension.nombRecibe,
-        docuRecibe: extension.docuRecibe,
-        observaciones: extension.observaciones
-      },
-      apendice: null
-    };
+    const data = { receptor, cuerpoDocumento: cuerpoData, resumen: { condicionOperacion: 1, observaciones } };
 
     try {
       const response = await enviarComprobanteLiquidacion(data);
@@ -348,14 +285,14 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
       tipoDte: '03',
       tipoGeneracion: 2,
       numeroDocumento: '',
-      fechaGeneracion: new Date().toISOString().split('T')[0],
+      fechaEmision: new Date().toISOString().split('T')[0],
       ventaNoSuj: 0,
       ventaExenta: 0,
       ventaGravada: 0,
       exportaciones: 0,
       tributos: ['20'],
       ivaItem: 0,
-      obsItem: 'Liquidación de operación'
+      observaciones: 'Liquidación de operación'
     }]);
   };
 
@@ -379,7 +316,7 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 block"></span>
             Datos del Receptor (Liquidado)
           </h2>
-          <ReceptorForm receptor={receptor} onChange={setReceptor} />
+          <ReceptorForm receptor={receptor} onChange={setReceptor} catalogoVigente datosContribuyente />
         </div>
 
         {/* CUERPO - DOCUMENTOS LIQUIDADOS */}
@@ -448,7 +385,7 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   <div>
                     <label className="label text-xs font-bold text-gray-700">Fecha Emisión Original</label>
-                    <input type="date" className="input text-sm" value={item.fechaGeneracion} onChange={e => updateItem(idx, 'fechaGeneracion', e.target.value)} required />
+                    <input type="date" className="input text-sm" value={item.fechaEmision} onChange={e => updateItem(idx, 'fechaEmision', e.target.value)} required />
                   </div>
 
                   <div>
@@ -475,7 +412,7 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
                 {/* Descripcion */}
                 <div className="mt-3">
                   <label className="label text-xs font-bold text-gray-700">Observaciones del ítem / Descripción</label>
-                  <input type="text" className="input text-sm" placeholder="Ej. Liquidación de venta de bienes y comisiones según factura" value={item.obsItem} onChange={e => updateItem(idx, 'obsItem', e.target.value)} required />
+                  <input type="text" className="input text-sm" placeholder="Ej. Liquidación de venta de bienes y comisiones según factura" value={item.observaciones} onChange={e => updateItem(idx, 'observaciones', e.target.value)} required />
                 </div>
 
                 {/* Linked visualizer info */}
@@ -490,45 +427,9 @@ export const ComprobanteLiquidacionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* RESPONSABLES Y EXTENSION */}
         <div className="card shadow-xs">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 block"></span>
-            Firmas y Datos de Extensión (Responsables)
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Responsable de la Entrega (Emisor) */}
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 tracking-wider uppercase border-b border-gray-200 pb-1">Representante del Emisor</h3>
-              <div>
-                <label className="label text-xs text-gray-600">Nombre de Responsable</label>
-                <input type="text" className="input text-sm" value={extension.nombEntrega} onChange={e => setExtension({ ...extension, nombEntrega: e.target.value })} required />
-              </div>
-              <div>
-                <label className="label text-xs text-gray-600">Documento de Identificación (NIT/DUI)</label>
-                <input type="text" className="input text-sm" value={extension.docuEntrega} onChange={e => setExtension({ ...extension, docuEntrega: e.target.value })} required />
-              </div>
-            </div>
-
-            {/* Responsable de la Recepcion (Receptor) */}
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 tracking-wider uppercase border-b border-gray-200 pb-1">Representante del Receptor</h3>
-              <div>
-                <label className="label text-xs text-gray-600">Nombre de Responsable</label>
-                <input type="text" className="input text-sm" value={extension.nombRecibe} onChange={e => setExtension({ ...extension, nombRecibe: e.target.value })} required />
-              </div>
-              <div>
-                <label className="label text-xs text-gray-600">Documento de Identificación (NIT/DUI)</label>
-                <input type="text" className="input text-sm" value={extension.docuRecibe} onChange={e => setExtension({ ...extension, docuRecibe: e.target.value })} required />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="label text-xs font-bold text-gray-700">Observaciones Generales</label>
-            <textarea className="input text-sm h-20 resize-none" value={extension.observaciones} onChange={e => setExtension({ ...extension, observaciones: e.target.value })} />
-          </div>
+          <label className="label text-xs font-bold text-gray-700">Observaciones Generales</label>
+          <textarea className="input text-sm h-20 resize-none" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
         </div>
 
         {/* RESUMEN PANEL */}

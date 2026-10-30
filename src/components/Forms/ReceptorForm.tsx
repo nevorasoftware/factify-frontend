@@ -15,6 +15,8 @@ interface ReceptorFormProps {
   receptorOpcional?: boolean;
   /** Muestra los datos de contribuyente que exige el crédito fiscal. */
   datosContribuyente?: boolean;
+  /** Oculta la dirección: el receptor de una exportación la indica aparte. */
+  sinDireccion?: boolean;
 }
 
 export const ReceptorForm: React.FC<ReceptorFormProps> = ({
@@ -22,7 +24,8 @@ export const ReceptorForm: React.FC<ReceptorFormProps> = ({
   onChange,
   catalogoVigente = false,
   receptorOpcional = false,
-  datosContribuyente = false
+  datosContribuyente = false,
+  sinDireccion = false
 }) => {
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -278,7 +281,7 @@ export const ReceptorForm: React.FC<ReceptorFormProps> = ({
             placeholder="Ej. 2222-2222"
           />
         </div>
-        {catalogoVigente ? (
+        {sinDireccion ? null : catalogoVigente ? (
           <DireccionSelects
             valor={receptor.direccion}
             requerido={!receptorOpcional}
@@ -315,6 +318,7 @@ export const ReceptorForm: React.FC<ReceptorFormProps> = ({
           </div>
           </>
         )}
+        {!sinDireccion && (
         <div className="md:col-span-2">
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
             Dirección Completa (Complemento){receptorOpcional ? '' : ' *'}
@@ -328,6 +332,7 @@ export const ReceptorForm: React.FC<ReceptorFormProps> = ({
             placeholder="Ej. Calle Principal N° 12, San Salvador"
           />
         </div>
+        )}
       </div>
     </div>
   );

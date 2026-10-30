@@ -1,11 +1,13 @@
 // src/pages/FacturaExportacionPage.tsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Send, Globe, Truck, DollarSign } from 'lucide-react';
 import { ReceptorForm } from '../components/Forms/ReceptorForm';
 import { ItemsTable } from '../components/Forms/ItemsTable';
 import { Toast } from '../components/Common/Toast';
 import { LoadingSpinner } from '../components/Common/LoadingSpinner';
 import { enviarFacturaExportacion } from '../services/dte.service';
+import { CatalogosGenerales, obtenerCatalogosGenerales } from '../services/catalogos.service';
+import { mensajeError, mensajeRechazo } from '../utils/errores';
 import { Receptor, Item } from '../types';
 import { formatCurrency, numeroALetras } from '../utils/formatters';
 
@@ -13,97 +15,71 @@ export const FacturaExportacionPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [receptor, setReceptor] = useState<Receptor>({
     nit: '', nrc: '', nombre: '', codActividad: null, descActividad: null,
-    direccion: { departamento: '06', municipio: '14', complemento: '' }, telefono: '', correo: ''
+    direccion: { departamento: '', municipio: '', distrito: '', complemento: '' }, telefono: '', correo: ''
   });
   const [items, setItems] = useState<Item[]>([{
-    numItem: 1, tipoItem: 1, cantidad: 1, codigo: 'EXP-001', uniMedida: 59, descripcion: '', precioUni: 0, montoDescu: 0, ventaGravada: 0
+    numItem: 1, tipoItem: 1, cantidad: 1, codigo: null, uniMedida: 59, descripcion: '', precioUni: 0, montoDescu: 0, ventaGravada: 0
   }]);
   
   // Estados para captura de campos de Exportación
-  const [pais, setPais] = useState('840'); // USA por defecto (ISO numeric 3 digits)
-  const [nombrePais, setNombrePais] = useState('ESTADOS UNIDOS');
-  const [tipoPersona, setTipoPersona] = useState('2'); // Jurídica por defecto
+  const [pais, setPais] = useState('');
+  const [nombrePais, setNombrePais] = useState('');
+  const [tipoPersona, setTipoPersona] = useState('2');
   const [complemento, setComplemento] = useState('');
   
-  const [codIncoterms, setCodIncoterms] = useState('04'); // FOB por defecto
-  const [descIncoterms, setDescIncoterms] = useState('FOB - Free on Board');
+  const [codIncoterms, setCodIncoterms] = useState('');
+  const [descIncoterms, setDescIncoterms] = useState('');
+  const [tipoItemExpor, setTipoItemExpor] = useState('1');
+  const [recintoFiscal, setRecintoFiscal] = useState('');
+  const [tipoRegimen, setTipoRegimen] = useState('');
+  const [regimen, setRegimen] = useState('');
+  const [catalogos, setCatalogos] = useState<CatalogosGenerales | null>(null);
   const [flete, setFlete] = useState<number>(0);
   const [seguro, setSeguro] = useState<number>(0);
-  const [observaciones, setObservaciones] = useState('Exportacion de mercaderia');
+  const [observaciones, setObservaciones] = useState('');
   
   const [toast, setToast] = useState<any>(null);
 
-  const paises = [
-    { code: '840', name: 'ESTADOS UNIDOS' },
-    { code: '320', name: 'GUATEMALA' },
-    { code: '340', name: 'HONDURAS' },
-    { code: '124', name: 'CANADA' },
-    { code: '591', name: 'PANAMA' },
-    { code: '188', name: 'COSTA RICA' },
-    { code: '558', name: 'NICARAGUA' },
-    { code: '156', name: 'CHINA' },
-    { code: '724', name: 'ESPAÑA' }
-  ];
+  useEffect(() => {
+    obtenerCatalogosGenerales().then(setCatalogos).catch(() => setCatalogos(null));
+  }, []);
 
-  const incotermsOptions = [
-    { code: '04', label: 'FOB - Free on Board' },
-    { code: '01', label: 'EXW - Ex Works' },
-    { code: '02', label: 'FCA - Free Carrier' },
-    { code: '06', label: 'CIF - Cost, Insurance and Freight' },
-    { code: '11', label: 'DDP - Delivered Duty Paid' },
-    { code: '09', label: 'DAP - Delivered At Place' }
-  ];
+  const paises = catalogos?.paises || [];
+  const incotermsOptions = catalogos?.incoterms || [];
+  const esServicio = tipoItemExpor === '2';
 
   const handlePaisChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const code = e.target.value;
-    const found = paises.find(p => p.code === code);
+    const found = paises.find(p => p.codigo === code);
     setPais(code);
-    if (found) setNombrePais(found.name);
+    setNombrePais(found ? found.nombre : '');
   };
 
   const handleIncotermChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const code = e.target.value;
-    const found = incotermsOptions.find(i => i.code === code);
+    const found = incotermsOptions.find(i => i.codigo === code);
     setCodIncoterms(code);
-    if (found) setDescIncoterms(found.label);
+    setDescIncoterms(found ? found.nombre : '');
   };
 
   const subtotal = items.reduce((sum, item) => sum + Number(item.ventaGravada || 0), 0);
-  const totalDescu = items.reduce((sum, item) => sum + Number(item.montoDescu || 0), 0);
-  const totalPagar = subtotal + Number(flete) + Number(seguro) - totalDescu;
+  const totalPagar = subtotal + Number(flete) + Number(seguro);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const data = {
-      receptor: { 
-        ...receptor, 
-        pais: pais, 
-        nombrePais: nombrePais,
-        tipoPersona: tipoPersona,
-        complemento: complemento || receptor.direccion?.complemento || "Miami, Florida, USA",
-        descActividad: receptor.descActividad || "Otros"
-      },
-      cuerpoDocumento: items.map(i => ({
-        ...i, 
-        precioUni: Number(i.precioUni),
-        cantidad: Number(i.cantidad),
-        montoDescu: Number(i.montoDescu || 0),
-        ventaGravada: Number(i.ventaGravada || 0)
-      })),
+    const data: any = {
+      exportacion: { tipoItemExpor, recintoFiscal, tipoRegimen, regimen },
+      receptor: { ...receptor, numDocumento: receptor.nit, codPais: pais, nombrePais, tipoPersona, complemento },
+      cuerpoDocumento: items,
       resumen: {
-        totalGravada: subtotal,
-        totalDescu: totalDescu,
-        totalPagar: totalPagar,
-        montoTotalOperacion: subtotal + Number(flete) + Number(seguro),
-        totalLetras: `${Math.floor(totalPagar)} ${((totalPagar % 1) * 100).toFixed(0)}/100 DOLARES USD`,
-        condicionOperacion: 1, 
-        seguro: Number(seguro), 
-        flete: Number(flete), 
-        codIncoterms: codIncoterms, 
-        descIncoterms: descIncoterms,
-        observaciones: observaciones
+        condicionOperacion: 1,
+        seguro: Number(seguro),
+        flete: Number(flete),
+        codIncoterms: codIncoterms || null,
+        descIncoterms: descIncoterms || null,
+        observaciones
       }
     };
 
@@ -117,11 +93,11 @@ export const FacturaExportacionPage: React.FC = () => {
       } else {
         setToast({ 
           type: 'error', 
-          message: `❌ Error MH: ${response.resultado?.descripcionMsg || response.error || 'Rechazado'}` 
+          message: mensajeRechazo(response, 'Rechazado por Hacienda') 
         });
       }
     } catch (error: any) {
-      setToast({ type: 'error', message: error.message });
+      setToast({ type: 'error', message: mensajeError(error) });
     } finally { setLoading(false); }
   };
 
@@ -142,7 +118,11 @@ export const FacturaExportacionPage: React.FC = () => {
             <Globe className="w-5 h-5 text-primary-600" />
             Información del Cliente Extranjero
           </h2>
-          <ReceptorForm receptor={receptor} onChange={setReceptor} />
+          <ReceptorForm receptor={receptor} onChange={setReceptor} catalogoVigente sinDireccion />
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Actividad económica del receptor *</label>
+            <input type="text" className="input" value={receptor.descActividad || ''} onChange={(e) => setReceptor({ ...receptor, descActividad: e.target.value })} required />
+          </div>
         </div>
 
         {/* Sección Especializada de Logística y Aduanas */}
@@ -154,14 +134,14 @@ export const FacturaExportacionPage: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">País Destino</label>
-              <select 
-                value={pais} 
+              <label className="block text-sm font-medium text-gray-700 mb-1">País Destino *</label>
+              <select required value={pais} 
                 onChange={handlePaisChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white text-gray-800 border p-2"
               >
+                <option value="">Seleccione</option>
                 {paises.map(p => (
-                  <option key={p.code} value={p.code}>{p.name}</option>
+                  <option key={p.codigo} value={p.codigo}>{p.nombre}</option>
                 ))}
               </select>
             </div>
@@ -185,11 +165,48 @@ export const FacturaExportacionPage: React.FC = () => {
                 onChange={handleIncotermChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm bg-white text-gray-800 border p-2"
               >
+                <option value="">Sin INCOTERM</option>
                 {incotermsOptions.map(i => (
-                  <option key={i.code} value={i.code}>{i.label}</option>
+                  <option key={i.codigo} value={i.codigo}>{i.nombre}</option>
                 ))}
               </select>
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Se exporta *</label>
+              <select className="input" value={tipoItemExpor} onChange={(e) => setTipoItemExpor(e.target.value)}>
+                <option value="1">Bienes</option>
+                <option value="2">Servicios</option>
+                <option value="3">Bienes y servicios</option>
+              </select>
+            </div>
+            {!esServicio && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Recinto fiscal *</label>
+                  <select className="input" value={recintoFiscal} onChange={(e) => setRecintoFiscal(e.target.value)} required>
+                    <option value="">Seleccione</option>
+                    {(catalogos?.recintos || []).map(r => <option key={r.codigo} value={r.codigo}>{r.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de régimen *</label>
+                  <select className="input" value={tipoRegimen} onChange={(e) => setTipoRegimen(e.target.value)} required>
+                    <option value="">Seleccione</option>
+                    {(catalogos?.tiposRegimen || []).map(r => <option key={r.codigo} value={r.codigo}>{r.nombre}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Régimen *</label>
+                  <select className="input" value={regimen} onChange={(e) => setRegimen(e.target.value)} required>
+                    <option value="">Seleccione</option>
+                    {(catalogos?.regimenes || []).map(r => <option key={r.codigo} value={r.codigo}>{r.codigo} {r.nombre}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -224,9 +241,8 @@ export const FacturaExportacionPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Dirección en el Extranjero (Mín. 10 caracteres)</label>
-              <input 
-                type="text" 
+              <label className="block text-sm font-medium text-gray-700 mb-1">Dirección en el Extranjero *</label>
+              <input required type="text" 
                 value={complemento}
                 onChange={(e) => setComplemento(e.target.value)}
                 placeholder="Dirección exacta en el país de destino"
@@ -253,7 +269,7 @@ export const FacturaExportacionPage: React.FC = () => {
             <DollarSign className="w-5 h-5 text-primary-600" />
             Detalle de Bienes y Servicios a Exportar
           </h2>
-          <ItemsTable items={items} onChange={setItems} />
+          <ItemsTable items={items} onChange={setItems} sinIva />
         </div>
 
         {/* RESUMEN PANEL */}
@@ -262,12 +278,12 @@ export const FacturaExportacionPage: React.FC = () => {
             <h3 className="text-sm font-semibold text-indigo-200 uppercase tracking-widest">Resumen de Exportación</h3>
             <div className="text-2xl font-black text-white">{numeroALetras(totalPagar)}</div>
             <p className="text-xs text-indigo-300">
-              Valor FOB: <strong>${formatCurrency(subtotal)}</strong> | Flete: <strong>${formatCurrency(flete)}</strong> | Seguro: <strong>${formatCurrency(seguro)}</strong> | Descuentos: <strong>${formatCurrency(totalDescu)}</strong>
+              Ventas: <strong>${formatCurrency(subtotal)}</strong> | Flete: <strong>${formatCurrency(flete)}</strong> | Seguro: <strong>${formatCurrency(seguro)}</strong>
             </p>
           </div>
           <div className="flex gap-4 self-center md:self-auto border-t md:border-t-0 md:border-l border-white/10 pt-4 md:pt-0 md:pl-8">
             <div className="text-right">
-              <span className="text-xs text-indigo-200 font-medium block">Total FOB a Pagar</span>
+              <span className="text-xs text-indigo-200 font-medium block">Total a Pagar</span>
               <span className="text-4xl font-extrabold text-emerald-400 font-mono">${formatCurrency(totalPagar)}</span>
             </div>
           </div>

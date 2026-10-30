@@ -8,10 +8,11 @@ import { LoadingSpinner } from '../components/Common/LoadingSpinner';
 import { enviarNotaDebito, obtenerDteInfo } from '../services/dte.service';
 import { Receptor, Item, DocumentoRelacionado } from '../types';
 import { formatCurrency, numeroALetras } from '../utils/formatters';
+import { mensajeError, mensajeRechazo } from '../utils/errores';
 
 const initialReceptor: Receptor = {
   nit: '', nrc: '', nombre: '', codActividad: null, descActividad: null,
-  direccion: { departamento: '06', municipio: '14', complemento: '' },
+  direccion: { departamento: '', municipio: '', distrito: '', complemento: '' },
   telefono: '', correo: ''
 };
 
@@ -67,16 +68,17 @@ export const NotaDebitoPage: React.FC = () => {
         updateDocumentoRelacionado(0, 'fechaEmision', doc.fechaEmision);
         
         // Auto-completar receptor si está disponible
-        if (doc.cliente) {
+        if (doc.receptor) {
           setReceptor({
-            nit: doc.cliente.numDocumento.length === 14 ? doc.cliente.numDocumento : '',
-            nrc: '',
-            nombre: doc.cliente.nombre,
-            codActividad: null,
-            descActividad: null,
-            direccion: { departamento: '06', municipio: '14', complemento: '' },
-            telefono: '',
-            correo: doc.cliente.correo || ''
+            nit: doc.receptor.nit || doc.receptor.numDocumento || '',
+            nrc: doc.receptor.nrc || '',
+            nombre: doc.receptor.nombre || '',
+            nombreComercial: doc.receptor.nombreComercial || '',
+            codActividad: doc.receptor.codActividad || null,
+            descActividad: doc.receptor.descActividad || null,
+            direccion: doc.receptor.direccion || initialReceptor.direccion,
+            telefono: doc.receptor.telefono || '',
+            correo: doc.receptor.correo || ''
           });
         }
       } else {
@@ -98,13 +100,7 @@ export const NotaDebitoPage: React.FC = () => {
       receptor,
       documentoRelacionado: documentosRelacionados,
       cuerpoDocumento: items,
-      resumen: {
-        totalNoSuj: 0, totalExenta: 0, totalGravada: subtotal, subTotalVentas: subtotal,
-        descuNoSuj: 0, descuExenta: 0, descuGravada: 0, totalDescu: 0, subTotal: subtotal,
-        ivaRete1: 0, reteRenta: 0, montoTotalOperacion: total, totalPagar: total,
-        totalLetras: `${Math.floor(total)} ${((total % 1) * 100).toFixed(0)}/100 DOLARES USD`,
-        condicionOperacion: 1, pagos: null
-      }
+      resumen: { condicionOperacion: 1 }
     };
 
     try {
@@ -113,10 +109,10 @@ export const NotaDebitoPage: React.FC = () => {
         setToast({ type: 'success', message: `Nota de Débito enviada. Código: ${response.codigoGeneracion}` });
         setResultado(response);
       } else {
-        setToast({ type: 'error', message: response.error || 'Error al enviar Nota de Débito' });
+        setToast({ type: 'error', message: mensajeRechazo(response, 'Error al enviar Nota de Débito') });
       }
     } catch (error: any) {
-      setToast({ type: 'error', message: error.message });
+      setToast({ type: 'error', message: mensajeError(error) });
     } finally {
       setLoading(false);
     }
@@ -155,7 +151,7 @@ export const NotaDebitoPage: React.FC = () => {
             </div>
             <div>
               <label className="label">Fecha Emisión</label>
-              <input type="date" className="input bg-gray-50 cursor-not-allowed" value={documentosRelacionados[0].fechaEmision} readOnly disabled required />
+              <input type="date" className="input" value={documentosRelacionados[0].fechaEmision} onChange={(e) => updateDocumentoRelacionado(0, 'fechaEmision', e.target.value)} required />
             </div>
           </div>
 
@@ -190,7 +186,7 @@ export const NotaDebitoPage: React.FC = () => {
 
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Datos del Receptor</h2>
-          <ReceptorForm receptor={receptor} onChange={setReceptor} />
+          <ReceptorForm receptor={receptor} onChange={setReceptor} catalogoVigente datosContribuyente />
         </div>
 
         <div className="card">

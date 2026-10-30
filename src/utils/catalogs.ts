@@ -53,13 +53,17 @@ export const CATALOGOS = {
   
   // CAT-017 Forma de Pago
   formaPago: [
-    { code: '01', name: 'Efectivo' },
+    { code: '01', name: 'Billetes y monedas' },
     { code: '02', name: 'Tarjeta Débito' },
     { code: '03', name: 'Tarjeta Crédito' },
     { code: '04', name: 'Cheque' },
-    { code: '05', name: 'Transferencia Bancaria' },
-    { code: '08', name: 'Dinero Electrónico' },
+    { code: '05', name: 'Transferencia-Depósito Bancario' },
+    { code: '08', name: 'Dinero electrónico' },
+    { code: '09', name: 'Monedero electrónico' },
     { code: '11', name: 'Bitcoin' },
+    { code: '12', name: 'Otras Criptomonedas' },
+    { code: '13', name: 'Cuentas por pagar del receptor' },
+    { code: '14', name: 'Giro bancario' },
     { code: '99', name: 'Otros' }
   ],
   
@@ -75,6 +79,7 @@ export const CATALOGOS = {
     { code: '36', name: 'NIT' },
     { code: '13', name: 'DUI' },
     { code: '03', name: 'Pasaporte' },
+    { code: '02', name: 'Carnet de Residente' },
     { code: '37', name: 'Otro' }
   ],
   

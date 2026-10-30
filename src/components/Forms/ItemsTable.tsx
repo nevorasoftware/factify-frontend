@@ -11,9 +11,11 @@ interface ItemsTableProps {
   onChange: (items: Item[]) => void;
   /** El precio ingresado ya contiene el IVA, como en la factura. */
   precioIncluyeIva?: boolean;
+  /** El documento no lleva IVA: exportación, sujeto excluido y donación. */
+  sinIva?: boolean;
 }
 
-export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioIncluyeIva = false }) => {
+export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioIncluyeIva = false, sinIva = false }) => {
   const [productos, setProductos] = useState<any[]>([]);
   const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
   const [itemSearchTerm, setItemSearchTerm] = useState('');
@@ -102,6 +104,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioI
 
   const calcularTotales = () => {
     const ventas = items.reduce((sum, item) => sum + item.ventaGravada, 0);
+    if (sinIva) return { subtotal: ventas, iva: 0, total: ventas };
     if (precioIncluyeIva) {
       const ivaIncluido = ventas * 0.13 / 1.13;
       return { subtotal: ventas - ivaIncluido, iva: ivaIncluido, total: ventas };
@@ -277,10 +280,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioI
             <span className="text-gray-500">Subtotal:</span>
             <span className="font-mono text-gray-900">${formatCurrency(subtotal)}</span>
           </div>
+          {!sinIva && (
           <div className="flex justify-between py-1 text-sm font-semibold">
             <span className="text-gray-500">IVA (13%):</span>
             <span className="font-mono text-gray-900">${formatCurrency(iva)}</span>
           </div>
+          )}
           <div className="flex justify-between py-2 border-t border-gray-250 items-center">
             <span className="text-base font-bold text-gray-800">Total a Pagar:</span>
             <span className="text-2xl font-black text-primary-600 font-mono">${formatCurrency(total)}</span>

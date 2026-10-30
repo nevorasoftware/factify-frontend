@@ -9,6 +9,7 @@ import { enviarComprobanteDonacion } from '../services/dte.service';
 import { Receptor, Item, Pago } from '../types';
 import { CATALOGOS } from '../utils/catalogs';
 import { formatCurrency, numeroALetras } from '../utils/formatters';
+import { mensajeError, mensajeRechazo } from '../utils/errores';
 
 const initialReceptor: Receptor = {
   nit: '',
@@ -16,7 +17,7 @@ const initialReceptor: Receptor = {
   nombre: '',
   codActividad: null,
   descActividad: null,
-  direccion: { departamento: '06', municipio: '14', complemento: '' },
+  direccion: { departamento: '', municipio: '', distrito: '', complemento: '' },
   telefono: '',
   correo: ''
 };
@@ -28,8 +29,10 @@ export const ComprobanteDonacionPage: React.FC = () => {
     numItem: 1, tipoItem: 1, cantidad: 1, codigo: null, uniMedida: 99, descripcion: '', precioUni: 0, montoDescu: 0, ventaGravada: 0
   }]);
   const [condicionOperacion, setCondicionOperacion] = useState(1);
+  const [tipoDonacion, setTipoDonacion] = useState(1);
+  const [documentoAsociado, setDocumentoAsociado] = useState({ codDocAsociado: 1, descDocumento: '', detalleDocumento: '' });
   const [pagos, setPagos] = useState<Pago[]>([{
-    codigo: '01', montoPago: 0, referencia: 'Donacion Voluntaria', plazo: null, periodo: null
+    codigo: '01', montoPago: 0, referencia: null, plazo: null, periodo: null
   }]);
   const [resultado, setResultado] = useState<any>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -46,7 +49,7 @@ export const ComprobanteDonacionPage: React.FC = () => {
   const addPago = () => {
     setPagos([
       ...pagos,
-      { codigo: '01', montoPago: 0, referencia: 'Donacion Voluntaria', plazo: null, periodo: null }
+      { codigo: '01', montoPago: 0, referencia: null, plazo: null, periodo: null }
     ]);
   };
 
@@ -60,7 +63,7 @@ export const ComprobanteDonacionPage: React.FC = () => {
       numItem: 1, tipoItem: 1, cantidad: 1, codigo: null, uniMedida: 99, descripcion: '', precioUni: 0, montoDescu: 0, ventaGravada: 0
     }]);
     setCondicionOperacion(1);
-    setPagos([{ codigo: '01', montoPago: 0, referencia: 'Donacion Voluntaria', plazo: null, periodo: null }]);
+    setPagos([{ codigo: '01', montoPago: 0, referencia: null, plazo: null, periodo: null }]);
     setResultado(null);
   };
 
@@ -68,30 +71,18 @@ export const ComprobanteDonacionPage: React.FC = () => {
     e.preventDefault();
     setLoading(true);
 
-    const pagosConMonto = pagos.map(p => ({
-      ...p,
-      montoPago: total,
-      referencia: p.referencia || 'Donacion Voluntaria'
-    }));
-
-    const data = {
-      receptor: { ...receptor, tipoDocumento: '36', numDocumento: receptor.nit, domicilioFiscal: '1' },
+    const data: any = {
+      receptor,
+      otrosDocumentos: [documentoAsociado],
       cuerpoDocumento: items.map(i => ({
-        numItem: i.numItem,
-        tipoDonacion: 1,
+        tipoDonacion,
         cantidad: i.cantidad,
-        uniMedida: i.uniMedida ? Number(i.uniMedida) : 99,
-        codigo: i.codigo || `DON-${i.numItem}`,
+        uniMedida: i.uniMedida,
+        codigo: i.codigo,
         descripcion: i.descripcion,
-        valorUni: i.precioUni,
-        depreciacion: 0
+        valorUni: i.precioUni
       })),
-      resumen: {
-        valorTotal: total,
-        totalLetras: `${numeroALetras(total)}`,
-        pagos: pagosConMonto,
-        condicionOperacion
-      }
+      resumen: { pagos }
     };
 
     try {
@@ -101,10 +92,10 @@ export const ComprobanteDonacionPage: React.FC = () => {
         setResultado(response);
         limpiarFormulario();
       } else {
-        setToast({ type: 'error', message: response.error || 'Error al enviar comprobante de donación' });
+        setToast({ type: 'error', message: mensajeRechazo(response, 'Error al enviar comprobante de donación') });
       }
     } catch (error: any) {
-      setToast({ type: 'error', message: error.message || 'Error de conexión' });
+      setToast({ type: 'error', message: mensajeError(error) });
     } finally {
       setLoading(false);
     }
@@ -120,12 +111,41 @@ export const ComprobanteDonacionPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Datos del Donante</h2>
-          <ReceptorForm receptor={receptor} onChange={setReceptor} />
+          <ReceptorForm receptor={receptor} onChange={setReceptor} catalogoVigente />
         </div>
 
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Detalle de la Donación</h2>
-          <ItemsTable items={items} onChange={setItems} />
+          <div className="mb-4 max-w-sm">
+            <label className="label">Tipo de donación *</label>
+            <select className="input" value={tipoDonacion} onChange={(e) => setTipoDonacion(Number(e.target.value))}>
+              <option value={1}>Efectivo</option>
+              <option value={2}>Bien</option>
+              <option value={3}>Servicio</option>
+            </select>
+          </div>
+          <ItemsTable items={items} onChange={setItems} sinIva />
+        </div>
+
+        <div className="card">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Documento que respalda la donación</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="label">Asociado a *</label>
+              <select className="input" value={documentoAsociado.codDocAsociado} onChange={(e) => setDocumentoAsociado({ ...documentoAsociado, codDocAsociado: Number(e.target.value) })}>
+                <option value={1}>Emisor</option>
+                <option value={2}>Receptor</option>
+              </select>
+            </div>
+            <div>
+              <label className="label">Identificación del documento *</label>
+              <input type="text" className="input" minLength={3} value={documentoAsociado.descDocumento} onChange={(e) => setDocumentoAsociado({ ...documentoAsociado, descDocumento: e.target.value })} required />
+            </div>
+            <div>
+              <label className="label">Descripción *</label>
+              <input type="text" className="input" minLength={3} value={documentoAsociado.detalleDocumento} onChange={(e) => setDocumentoAsociado({ ...documentoAsociado, detalleDocumento: e.target.value })} required />
+            </div>
+          </div>
         </div>
 
         <div className="card">
@@ -178,10 +198,9 @@ export const ComprobanteDonacionPage: React.FC = () => {
                   <input
                     type="text"
                     className="input flex-1"
-                    placeholder="Referencia de pago (obligatorio)"
+                    placeholder="Referencia de pago"
                     value={pago.referencia || ''}
                     onChange={(e) => handlePagoChange(idx, 'referencia', e.target.value)}
-                    required
                   />
                   {pagos.length > 1 && (
                     <button

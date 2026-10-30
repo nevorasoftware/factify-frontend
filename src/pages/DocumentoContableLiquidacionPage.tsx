@@ -7,6 +7,7 @@ import { LoadingSpinner } from '../components/Common/LoadingSpinner';
 import { enviarDocumentoContableLiquidacion } from '../services/dte.service';
 import { Receptor } from '../types';
 import { formatCurrency, numeroALetras } from '../utils/formatters';
+import { mensajeError, mensajeRechazo } from '../utils/errores';
 
 const round2 = (num: number) => Math.round((num + Number.EPSILON) * 100) / 100;
 
@@ -19,30 +20,28 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
     nit: '',
     nrc: '',
     nombre: '',
-    codActividad: '46900',
-    descActividad: 'Comercio al por mayor no especializado',
-    direccion: { departamento: '01', municipio: '01', complemento: '' },
+    codActividad: null,
+    descActividad: null,
+    direccion: { departamento: '', municipio: '', distrito: '', complemento: '' },
     telefono: '',
     correo: '',
-    tipoEstablecimiento: '01',
-    nombreComercial: '',
-    codigoMH: '0000',
-    puntoVentaMH: '0000'
+    tipoEstablecimiento: '02',
+    nombreComercial: ''
   });
 
   // Liquidación Period & Metadata
   const [fechaInicio, setFechaInicio] = useState(new Date().toISOString().split('T')[0]);
   const [fechaFin, setFechaFin] = useState(new Date().toISOString().split('T')[0]);
-  const [codLiquidacion, setCodLiquidacion] = useState('LIQ-' + Math.floor(1000 + Math.random() * 9000));
+  const [codLiquidacion, setCodLiquidacion] = useState('');
   const [cantidadDoc, setCantidadDoc] = useState(1);
-  const [observaciones, setObservaciones] = useState('Liquidación mensual de operaciones');
+  const [observaciones, setObservaciones] = useState('');
 
   // Valores Financieros
   const [valorOperaciones, setValorOperaciones] = useState(0);
   const [montoSinPercepcion, setMontoSinPercepcion] = useState(0);
   const [descripSinPercepcion, setDescripSinPercepcion] = useState('');
   const [comision, setComision] = useState(0);
-  const [porcentComision, setPorcentComision] = useState('5.00%');
+  const [porcentComision, setPorcentComision] = useState('');
 
   // Manual Overrides (in case they need exact decimal tweaks)
   const [iva, setIva] = useState(0);
@@ -52,14 +51,15 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
 
   // Auto-calculated variables
   const subTotal = round2(valorOperaciones - montoSinPercepcion);
-  const montoSujetoPercepcion = subTotal;
+  const ivaIncluido = round2(subTotal * 13 / 113);
+  const montoSujetoPercepcion = round2(subTotal - ivaIncluido);
 
   // React to input changes to suggest standard calculations
   useEffect(() => {
-    const computedIva = round2(subTotal * 0.13);
+    const computedIva = ivaIncluido;
     const computedIvaPercibido = round2(montoSujetoPercepcion * 0.02);
     const computedIvaComision = round2(comision * 0.13);
-    const computedLiquido = round2((valorOperaciones + computedIva) - computedIvaPercibido - comision - computedIvaComision);
+    const computedLiquido = round2(valorOperaciones - computedIvaPercibido - comision - computedIvaComision);
 
     setIva(computedIva);
     setIvaPercibido(computedIvaPercibido);
@@ -70,7 +70,7 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
   // Extension (Responsable)
   const [nombEntrega, setNombEntrega] = useState('');
   const [docuEntrega, setDocuEntrega] = useState('');
-  const [codEmpleado, setCodEmpleado] = useState('EMP01');
+  const [codEmpleado, setCodEmpleado] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,15 +98,15 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
         montoSujetoPercepcion: Number(montoSujetoPercepcion),
         ivaPercibido: Number(ivaPercibido),
         comision: Number(comision),
-        porcentComision: porcentComision || null,
+        porcentComision: Number(String(porcentComision).replace('%', '')) || 0,
         ivaComision: Number(ivaComision),
         liquidoApagar: Number(liquidoApagar),
         totalLetras: numeroALetras(liquidoApagar),
         observaciones: observaciones || null
       },
       extension: {
-        nombEntrega: nombEntrega || receptor.nombre,
-        docuEntrega: docuEntrega || '0000-000000-000-0',
+        nombEntrega,
+        docuEntrega,
         codEmpleado: codEmpleado || null
       },
       apendice: null
@@ -122,11 +122,11 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
       } else {
         setToast({ 
           type: 'error', 
-          message: `❌ Error MH: ${response.resultado?.descripcionMsg || response.error || 'Rechazado'}` 
+          message: mensajeRechazo(response, 'Rechazado por Hacienda') 
         });
       }
     } catch (error: any) {
-      setToast({ type: 'error', message: error.message || 'Error en la petición' });
+      setToast({ type: 'error', message: mensajeError(error) });
     } finally {
       setLoading(false);
     }
@@ -149,7 +149,16 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
             <UserCheck className="w-5 h-5 text-primary-600" />
             Información del Receptor (Afiliado/Contribuyente)
           </h2>
-          <ReceptorForm receptor={receptor} onChange={setReceptor} />
+          <ReceptorForm receptor={receptor} onChange={setReceptor} catalogoVigente datosContribuyente />
+          <div className="mt-4 max-w-sm">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Establecimiento *</label>
+            <select className="input" value={receptor.tipoEstablecimiento} onChange={e => setReceptor({ ...receptor, tipoEstablecimiento: e.target.value })} required>
+              <option value="02">Casa Matriz</option>
+              <option value="01">Sucursal</option>
+              <option value="04">Bodega</option>
+              <option value="07">Patio</option>
+            </select>
+          </div>
         </div>
 
         {/* SECCIÓN 2: PERIODO Y GENERALES */}
@@ -266,8 +275,8 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
           <div className="border-t border-gray-100 col-span-1 md:col-span-3 my-2 pt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-amber-700 mb-1 flex items-center gap-1">
-                IVA de Operaciones (13%)
-                <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono">Editable</span>
+                IVA incluido en las operaciones (13%)
+                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">Calculado</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-gray-400 font-medium">$</span>
@@ -276,7 +285,7 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
                   step="0.00000001" 
                   className="input pl-8 bg-amber-50/50 border-amber-200 focus:ring-amber-500 font-mono" 
                   value={iva} 
-                  onChange={e => setIva(Number(e.target.value))} 
+                  readOnly 
                 />
               </div>
             </div>
@@ -284,7 +293,7 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-amber-700 mb-1 flex items-center gap-1">
                 IVA Percibido (2%)
-                <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono">Editable</span>
+                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">Calculado</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-gray-400 font-medium">$</span>
@@ -293,7 +302,7 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
                   step="0.01" 
                   className="input pl-8 bg-amber-50/50 border-amber-200 focus:ring-amber-500 font-mono" 
                   value={ivaPercibido} 
-                  onChange={e => setIvaPercibido(Number(e.target.value))} 
+                  readOnly 
                 />
               </div>
             </div>
@@ -342,7 +351,7 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-amber-700 mb-1 flex items-center gap-1">
                 IVA de Comisión (13%)
-                <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-mono">Editable</span>
+                <span className="text-[10px] bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-mono">Calculado</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2.5 text-gray-400 font-medium">$</span>
@@ -351,7 +360,7 @@ export const DocumentoContableLiquidacionPage: React.FC = () => {
                   step="0.01" 
                   className="input pl-8 bg-amber-50/50 border-amber-200 focus:ring-amber-500 font-mono" 
                   value={ivaComision} 
-                  onChange={e => setIvaComision(Number(e.target.value))} 
+                  readOnly 
                 />
               </div>
             </div>

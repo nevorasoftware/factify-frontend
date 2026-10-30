@@ -6,12 +6,13 @@ import { Toast } from '../components/Common/Toast';
 import { LoadingSpinner } from '../components/Common/LoadingSpinner';
 import { enviarComprobanteRetencion, obtenerDteInfo } from '../services/dte.service';
 import { Receptor } from '../types';
+import { mensajeError, mensajeRechazo } from '../utils/errores';
 
 interface RetentionItem {
   numItem: number;
   tipoDte: string;
-  tipoDoc: number;
-  numDocumento: string;
+  tipoGeneracion: number;
+  numeroDocumento: string;
   fechaEmision: string;
   montoSujetoGrav: number;
   codigoRetencionMH: string;
@@ -27,7 +28,7 @@ const initialReceptor: Receptor = {
   nombre: '',
   codActividad: null,
   descActividad: null,
-  direccion: { departamento: '06', municipio: '14', complemento: '' },
+  direccion: { departamento: '', municipio: '', distrito: '', complemento: '' },
   telefono: '',
   correo: ''
 };
@@ -103,20 +104,13 @@ export const ComprobanteRetencionPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [receptor, setReceptor] = useState<Receptor>(initialReceptor);
   
-  // Extension fields
-  const [extension, setExtension] = useState({
-    nombEntrega: 'EMISOR AUTORIZADO',
-    docuEntrega: '0614-010101-101-1',
-    nombRecibe: 'RECEPTOR AUTORIZADO',
-    docuRecibe: '0614-020202-202-2',
-    observaciones: 'Retención de IVA del 1% según normativa legal vigente en El Salvador.'
-  });
+  const [observaciones, setObservaciones] = useState('');
 
   const [items, setItems] = useState<RetentionItem[]>([{
     numItem: 1,
     tipoDte: '03',
-    tipoDoc: 2,
-    numDocumento: '',
+    tipoGeneracion: 2,
+    numeroDocumento: '',
     fechaEmision: new Date().toISOString().split('T')[0],
     montoSujetoGrav: 0,
     codigoRetencionMH: '22',
@@ -136,8 +130,8 @@ export const ComprobanteRetencionPage: React.FC = () => {
     setItems([...items, {
       numItem: items.length + 1,
       tipoDte: '03',
-      tipoDoc: 2,
-      numDocumento: '',
+      tipoGeneracion: 2,
+      numeroDocumento: '',
       fechaEmision: new Date().toISOString().split('T')[0],
       montoSujetoGrav: 0,
       codigoRetencionMH: '22',
@@ -166,6 +160,8 @@ export const ComprobanteRetencionPage: React.FC = () => {
       const code = newItems[index].codigoRetencionMH;
       if (code === '22') {
         newItems[index].ivaRetenido = Number((ms * 0.01).toFixed(2));
+      } else if (code === 'C4') {
+        newItems[index].ivaRetenido = Number((ms * 0.13).toFixed(2));
       }
     }
 
@@ -174,7 +170,7 @@ export const ComprobanteRetencionPage: React.FC = () => {
 
   // Buscar DTE en local para auto-completar datos de retención e incluso del receptor
   const handleSearchItemDte = async (idx: number) => {
-    const uuid = items[idx].numDocumento.trim();
+    const uuid = items[idx].numeroDocumento.trim();
     if (!uuid) {
       setToast({ type: 'error', message: 'Por favor, ingrese el Código de Generación (UUID) del documento original.' });
       return;
@@ -204,11 +200,11 @@ export const ComprobanteRetencionPage: React.FC = () => {
         if (doc.cliente && !receptor.nombre) {
           setReceptor({
             nit: doc.cliente.numDocumento.length === 14 ? doc.cliente.numDocumento : '',
-            nrc: doc.cliente.nrc || '000000-0',
+            nrc: doc.cliente.nrc || '',
             nombre: doc.cliente.nombre,
             codActividad: doc.cliente.codActividad || null,
             descActividad: doc.cliente.descActividad || null,
-            direccion: { departamento: '06', municipio: '14', complemento: doc.cliente.direccion || '' },
+            direccion: { departamento: '', municipio: '', distrito: '', complemento: doc.cliente.direccion || '' },
             telefono: doc.cliente.telefono || '',
             correo: doc.cliente.correo || ''
           });
@@ -231,26 +227,12 @@ export const ComprobanteRetencionPage: React.FC = () => {
     setLoading(true);
     setResultado(null);
 
-    // Formatear payload de receptor
-    const receptorData = {
-      tipoDocumento: receptor.nit.length === 14 ? "36" : "13", // 36 = NIT, 13 = DUI/DTE
-      numDocumento: receptor.nit || "000000000",
-      nrc: receptor.nrc || "000000",
-      nombre: receptor.nombre,
-      codActividad: receptor.codActividad || "46900",
-      descActividad: receptor.descActividad || "Comercio al por mayor no especializado",
-      nombreComercial: receptor.nombre || "Receptor Comercial",
-      direccion: receptor.direccion,
-      telefono: receptor.telefono || "2222-2222",
-      correo: receptor.correo || "correo@receptor.com"
-    };
-
     // Formatear payload de cuerpoDocumento
     const cuerpoData = items.map(item => ({
       numItem: item.numItem,
       tipoDte: item.tipoDte,
-      tipoDoc: Number(item.tipoDoc),
-      numDocumento: item.numDocumento.trim().toUpperCase(),
+      tipoGeneracion: Number(item.tipoGeneracion),
+      numeroDocumento: item.numeroDocumento.trim().toUpperCase(),
       fechaEmision: item.fechaEmision,
       montoSujetoGrav: Number(item.montoSujetoGrav),
       codigoRetencionMH: item.codigoRetencionMH,
@@ -258,23 +240,7 @@ export const ComprobanteRetencionPage: React.FC = () => {
       descripcion: item.descripcion
     }));
 
-    const data = {
-      receptor: receptorData,
-      cuerpoDocumento: cuerpoData,
-      resumen: {
-        totalSujetoRetencion: Number(totalSujetoRetencion.toFixed(2)),
-        totalIVAretenido: Number(totalIVAretenido.toFixed(2)),
-        totalIVAretenidoLetras: totalIVAretenidoLetras
-      },
-      extension: {
-        nombEntrega: extension.nombEntrega,
-        docuEntrega: extension.docuEntrega,
-        nombRecibe: extension.nombRecibe,
-        docuRecibe: extension.docuRecibe,
-        observaciones: extension.observaciones
-      },
-      apendice: null
-    };
+    const data = { receptor, cuerpoDocumento: cuerpoData, resumen: { observaciones } };
 
     try {
       const response = await enviarComprobanteRetencion(data as any);
@@ -283,10 +249,10 @@ export const ComprobanteRetencionPage: React.FC = () => {
         setResultado(response);
         limpiarFormulario();
       } else {
-        setToast({ type: 'error', message: response.error || 'Error al emitir el Comprobante de Retención' });
+        setToast({ type: 'error', message: mensajeRechazo(response, 'Error al emitir el Comprobante de Retención') });
       }
     } catch (error: any) {
-      setToast({ type: 'error', message: error.message || 'Error de conexión' });
+      setToast({ type: 'error', message: mensajeError(error) });
     } finally {
       setLoading(false);
     }
@@ -297,8 +263,8 @@ export const ComprobanteRetencionPage: React.FC = () => {
     setItems([{
       numItem: 1,
       tipoDte: '03',
-      tipoDoc: 2,
-      numDocumento: '',
+      tipoGeneracion: 2,
+      numeroDocumento: '',
       fechaEmision: new Date().toISOString().split('T')[0],
       montoSujetoGrav: 0,
       codigoRetencionMH: '22',
@@ -327,7 +293,7 @@ export const ComprobanteRetencionPage: React.FC = () => {
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 block"></span>
             Datos del Receptor (Sujeto de Retención)
           </h2>
-          <ReceptorForm receptor={receptor} onChange={setReceptor} />
+          <ReceptorForm receptor={receptor} onChange={setReceptor} catalogoVigente datosContribuyente />
         </div>
 
         {/* CUERPO - DOCUMENTOS RETENIDOS */}
@@ -371,7 +337,7 @@ export const ComprobanteRetencionPage: React.FC = () => {
 
                   <div>
                     <label className="label text-xs font-bold text-gray-700">Formato del Documento</label>
-                    <select className="input text-sm" value={item.tipoDoc} onChange={e => updateItem(idx, 'tipoDoc', parseInt(e.target.value))}>
+                    <select className="input text-sm" value={item.tipoGeneracion} onChange={e => updateItem(idx, 'tipoGeneracion', parseInt(e.target.value))}>
                       <option value={2}>DTE Electrónico</option>
                       <option value={1}>Documento Físico</option>
                     </select>
@@ -380,8 +346,8 @@ export const ComprobanteRetencionPage: React.FC = () => {
                   <div className="md:col-span-2">
                     <label className="label text-xs font-bold text-gray-700">Número de Documento / UUID</label>
                     <div className="flex gap-2">
-                      <input type="text" className="input text-sm flex-1 font-mono uppercase" placeholder={item.tipoDoc === 2 ? "UUID COMPLETO" : "N° DOCUMENTO FISICO"} value={item.numDocumento} onChange={e => updateItem(idx, 'numDocumento', e.target.value)} required />
-                      {item.tipoDoc === 2 && (
+                      <input type="text" className="input text-sm flex-1 font-mono uppercase" placeholder={item.tipoGeneracion === 2 ? "UUID COMPLETO" : "N° DOCUMENTO FISICO"} value={item.numeroDocumento} onChange={e => updateItem(idx, 'numeroDocumento', e.target.value)} required />
+                      {item.tipoGeneracion === 2 && (
                         <button type="button" onClick={() => handleSearchItemDte(idx)} className="btn-secondary px-3 flex items-center justify-center gap-1 text-sm font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors" disabled={item.searching}>
                           {item.searching ? <LoadingSpinner /> : <Search size="14" />} Buscar
                         </button>
@@ -406,8 +372,8 @@ export const ComprobanteRetencionPage: React.FC = () => {
                     <label className="label text-xs font-bold text-gray-700">Tipo de Retención</label>
                     <select className="input text-sm" value={item.codigoRetencionMH} onChange={e => updateItem(idx, 'codigoRetencionMH', e.target.value)}>
                       <option value="22">Retención 1% IVA (22)</option>
-                      <option value="C4">Bienes/Servicios No Domiciliados (C4)</option>
-                      <option value="C9">Otras Retenciones (C9)</option>
+                      <option value="C4">Retención 13% IVA (C4)</option>
+                      <option value="C9">Otras retenciones, casos especiales (C9)</option>
                     </select>
                   </div>
 
@@ -435,45 +401,9 @@ export const ComprobanteRetencionPage: React.FC = () => {
           </div>
         </div>
 
-        {/* RESPONSABLES Y EXTENSION */}
         <div className="card shadow-xs">
-          <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 block"></span>
-            Firmas y Datos de Extensión (Responsables)
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* Responsable de la Entrega (Emisor) */}
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 tracking-wider uppercase border-b border-gray-200 pb-1">Representante del Emisor</h3>
-              <div>
-                <label className="label text-xs text-gray-600">Nombre de Responsable</label>
-                <input type="text" className="input text-sm" value={extension.nombEntrega} onChange={e => setExtension({ ...extension, nombEntrega: e.target.value })} required />
-              </div>
-              <div>
-                <label className="label text-xs text-gray-600">Documento de Identificación (NIT/DUI)</label>
-                <input type="text" className="input text-sm" value={extension.docuEntrega} onChange={e => setExtension({ ...extension, docuEntrega: e.target.value })} required />
-              </div>
-            </div>
-
-            {/* Responsable de la Recepcion (Receptor) */}
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
-              <h3 className="text-xs font-bold text-gray-900 tracking-wider uppercase border-b border-gray-200 pb-1">Representante del Receptor</h3>
-              <div>
-                <label className="label text-xs text-gray-600">Nombre de Responsable</label>
-                <input type="text" className="input text-sm" value={extension.nombRecibe} onChange={e => setExtension({ ...extension, nombRecibe: e.target.value })} required />
-              </div>
-              <div>
-                <label className="label text-xs text-gray-600">Documento de Identificación (NIT/DUI)</label>
-                <input type="text" className="input text-sm" value={extension.docuRecibe} onChange={e => setExtension({ ...extension, docuRecibe: e.target.value })} required />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className="label text-xs font-bold text-gray-700">Observaciones Generales</label>
-            <textarea className="input text-sm h-20 resize-none" value={extension.observaciones} onChange={e => setExtension({ ...extension, observaciones: e.target.value })} />
-          </div>
+          <label className="label text-xs font-bold text-gray-700">Observaciones Generales</label>
+          <textarea className="input text-sm h-20 resize-none" value={observaciones} onChange={e => setObservaciones(e.target.value)} />
         </div>
 
         {/* RESUMEN PANEL */}
