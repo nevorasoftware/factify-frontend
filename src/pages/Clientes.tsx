@@ -1,5 +1,6 @@
 // src/pages/Clientes.tsx
 import React, { useState, useEffect } from 'react';
+import { DireccionSelects } from '../components/Forms/DireccionSelects';
 import { 
   UserPlus, Search, Edit2, Trash2, Mail, Phone, MapPin, 
   FileText, ShieldAlert, Loader2, X, Check
@@ -22,12 +23,13 @@ export const Clientes: React.FC = () => {
     numDocumento: '',
     nrc: '',
     nombreComercial: '',
-    codActividad: '46900',
-    descActividad: 'Otros servicios',
+    codActividad: '',
+    descActividad: '',
     correo: '',
     telefono: '',
     departamento: '01',
     municipio: '01',
+    distrito: '',
     complemento: ''
   });
 
@@ -71,12 +73,13 @@ export const Clientes: React.FC = () => {
       numDocumento: '',
       nrc: '',
       nombreComercial: '',
-      codActividad: '46900',
-      descActividad: 'Otros servicios',
+      codActividad: '',
+      descActividad: '',
       correo: '',
       telefono: '',
       departamento: '01',
       municipio: '01',
+    distrito: '',
       complemento: ''
     });
     setShowModal(true);
@@ -92,12 +95,13 @@ export const Clientes: React.FC = () => {
       numDocumento: cliente.num_documento || '',
       nrc: cliente.nrc || '',
       nombreComercial: cliente.nombre_comercial || '',
-      codActividad: cliente.cod_actividad || '46900',
-      descActividad: cliente.desc_actividad || 'Otros servicios',
+      codActividad: cliente.cod_actividad || '',
+      descActividad: cliente.desc_actividad || '',
       correo: cliente.correo || '',
       telefono: cliente.telefono || '',
       departamento: dir.departamento || '01',
       municipio: dir.municipio || '01',
+      distrito: dir.distrito || '',
       complemento: dir.complemento || ''
     });
     setShowModal(true);
@@ -124,6 +128,7 @@ export const Clientes: React.FC = () => {
         direccion: {
           departamento: formData.departamento,
           municipio: formData.municipio,
+          distrito: formData.distrito,
           complemento: formData.complemento || 'San Salvador, El Salvador'
         }
       };
@@ -455,33 +460,12 @@ export const Clientes: React.FC = () => {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
-                    Departamento (Código MH)
-                  </label>
-                  <input 
-                    type="text"
-                    name="departamento"
-                    value={formData.departamento}
-                    onChange={handleInputChange}
-                    className="block w-full px-3.5 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm"
-                    placeholder="Ej. 01"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
-                    Municipio (Código MH)
-                  </label>
-                  <input 
-                    type="text"
-                    name="municipio"
-                    value={formData.municipio}
-                    onChange={handleInputChange}
-                    className="block w-full px-3.5 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm"
-                    placeholder="Ej. 01"
-                  />
-                </div>
+                <DireccionSelects
+                  valor={formData}
+                  claseEtiqueta="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1"
+                  claseCampo="block w-full px-3.5 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm"
+                  onChange={(cambios) => setFormData(prev => ({ ...prev, ...cambios }))}
+                />
 
                 <div className="md:col-span-2">
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">

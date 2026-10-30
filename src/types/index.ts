@@ -3,6 +3,7 @@
 export interface Direccion {
   departamento: string;
   municipio: string;
+  distrito?: string;
   complemento: string;
 }
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, Shield, Settings, Eye, CheckSquare, Square, Info, Upload, Image as ImageIcon, Trash2 } from 'lucide-react';
 import { api } from '../services/api';
 import { Toast } from '../components/Common/Toast';
-import { CATALOGOS } from '../utils/catalogs';
+import { DireccionSelects } from '../components/Forms/DireccionSelects';
 
 export const ConfiguracionPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -22,6 +22,7 @@ export const ConfiguracionPage: React.FC = () => {
   // Direccion
   const [departamento, setDepartamento] = useState('01');
   const [municipio, setMunicipio] = useState('01');
+  const [distrito, setDistrito] = useState('');
   const [complemento, setComplemento] = useState('');
 
   // MH Config
@@ -71,6 +72,7 @@ export const ConfiguracionPage: React.FC = () => {
         const dir = data.direccion || {};
         setDepartamento(dir.departamento || '01');
         setMunicipio(dir.municipio || '01');
+        setDistrito(dir.distrito || '');
         setComplemento(dir.complemento || '');
 
         setAmbiente(data.ambiente || '00');
@@ -147,7 +149,7 @@ export const ConfiguracionPage: React.FC = () => {
         nombreComercial,
         codActividad,
         descActividad,
-        direccion: { departamento, municipio, complemento },
+        direccion: { departamento, municipio, distrito, complemento },
         telefono,
         dtesVisibles,
         ambiente,
@@ -310,16 +312,17 @@ export const ConfiguracionPage: React.FC = () => {
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Departamento</label>
-              <select className="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" value={departamento} onChange={e => setDepartamento(e.target.value)} required>
-                {CATALOGOS.departamentos.map(d => <option key={d.code} value={d.code} className="text-gray-900">{d.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Código Municipio</label>
-              <input className="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors font-mono" value={municipio} onChange={e => setMunicipio(e.target.value)} required />
-            </div>
+            <DireccionSelects
+              valor={{ departamento, municipio, distrito }}
+              requerido
+              claseEtiqueta="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2"
+              claseCampo="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+              onChange={(cambios) => {
+                setDepartamento(cambios.departamento);
+                setMunicipio(cambios.municipio);
+                setDistrito(cambios.distrito);
+              }}
+            />
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Complemento de Dirección</label>
               <input className="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" value={complemento} onChange={e => setComplemento(e.target.value)} required />

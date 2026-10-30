@@ -8,6 +8,7 @@ import { Toast } from '../components/Common/Toast';
 import { LoadingSpinner } from '../components/Common/LoadingSpinner';
 import { enviarCCF } from '../services/dte.service';
 import { Receptor, Item, Pago } from '../types';
+import { mensajeError, mensajeRechazo } from '../utils/errores';
 
 const initialReceptor: Receptor = {
   nit: '',
@@ -16,7 +17,7 @@ const initialReceptor: Receptor = {
   codActividad: null,
   descActividad: null,
   nombreComercial: '',
-  direccion: { departamento: '06', municipio: '14', complemento: '' },
+  direccion: { departamento: '', municipio: '', distrito: '', complemento: '' },
   telefono: '',
   correo: ''
 };
@@ -45,30 +46,7 @@ export const CCFPage: React.FC = () => {
     const data = {
       receptor,
       cuerpoDocumento: items,
-      resumen: {
-        totalNoSuj: 0,
-        totalExenta: 0,
-        totalGravada: subtotal,
-        subTotalVentas: subtotal,
-        descuNoSuj: 0,
-        descuExenta: 0,
-        descuGravada: 0,
-        porcentajeDescuento: 0,
-        totalDescu: 0,
-        tributos: [{ codigo: '20', descripcion: 'Impuesto al Valor Agregado 13%', valor: iva }],
-        subTotal: subtotal,
-        ivaPerci1: 0,
-        ivaRete1: 0,
-        reteRenta: 0,
-        montoTotalOperacion: total,
-        totalNoGravado: 0,
-        totalPagar: total,
-        totalLetras: `${Math.floor(total)} ${((total % 1) * 100).toFixed(0)}/100 DOLARES USD`,
-        saldoFavor: 0,
-        condicionOperacion,
-        pagos: condicionOperacion === 1 ? pagos.map(p => ({ ...p, montoPago: total })) : pagos,
-        numPagoElectronico: null
-      }
+      resumen: { condicionOperacion, pagos }
     };
 
     try {
@@ -78,10 +56,10 @@ export const CCFPage: React.FC = () => {
         setResultado(response);
         limpiarFormulario();
       } else {
-        setToast({ type: 'error', message: response.error || 'Error al enviar CCF' });
+        setToast({ type: 'error', message: mensajeRechazo(response, 'Error al enviar CCF') });
       }
     } catch (error: any) {
-      setToast({ type: 'error', message: error.message || 'Error de conexión' });
+      setToast({ type: 'error', message: mensajeError(error) });
     } finally {
       setLoading(false);
     }
@@ -108,7 +86,7 @@ export const CCFPage: React.FC = () => {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="card">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Datos del Receptor</h2>
-          <ReceptorForm receptor={receptor} onChange={setReceptor} />
+          <ReceptorForm receptor={receptor} onChange={setReceptor} catalogoVigente datosContribuyente />
         </div>
 
         <div className="card">

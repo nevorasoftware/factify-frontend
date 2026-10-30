@@ -9,9 +9,11 @@ import { obtenerProductos } from '../../services/inventario.service';
 interface ItemsTableProps {
   items: Item[];
   onChange: (items: Item[]) => void;
+  /** El precio ingresado ya contiene el IVA, como en la factura. */
+  precioIncluyeIva?: boolean;
 }
 
-export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange }) => {
+export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioIncluyeIva = false }) => {
   const [productos, setProductos] = useState<any[]>([]);
   const [activeSearchIndex, setActiveSearchIndex] = useState<number | null>(null);
   const [itemSearchTerm, setItemSearchTerm] = useState('');
@@ -99,10 +101,13 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange }) => {
   };
 
   const calcularTotales = () => {
-    const subtotal = items.reduce((sum, item) => sum + item.ventaGravada, 0);
-    const iva = subtotal * 0.13;
-    const total = subtotal + iva;
-    return { subtotal, iva, total };
+    const ventas = items.reduce((sum, item) => sum + item.ventaGravada, 0);
+    if (precioIncluyeIva) {
+      const ivaIncluido = ventas * 0.13 / 1.13;
+      return { subtotal: ventas - ivaIncluido, iva: ivaIncluido, total: ventas };
+    }
+    const iva = ventas * 0.13;
+    return { subtotal: ventas, iva, total: ventas + iva };
   };
 
   const { subtotal, iva, total } = calcularTotales();

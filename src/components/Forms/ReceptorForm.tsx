@@ -4,13 +4,26 @@ import { Receptor, Direccion } from '../../types';
 import { CATALOGOS } from '../../utils/catalogs';
 import { obtenerClientes } from '../../services/cliente.service';
 import { Search, ChevronDown, Check, Loader2 } from 'lucide-react';
+import { DireccionSelects } from './DireccionSelects';
 
 interface ReceptorFormProps {
   receptor: Receptor;
   onChange: (receptor: Receptor) => void;
+  /** Usa municipio y distrito de los catálogos vigentes. Para los documentos en formato V2.0. */
+  catalogoVigente?: boolean;
+  /** Permite dejar el receptor vacío: consumidor final sin identificar. */
+  receptorOpcional?: boolean;
+  /** Muestra los datos de contribuyente que exige el crédito fiscal. */
+  datosContribuyente?: boolean;
 }
 
-export const ReceptorForm: React.FC<ReceptorFormProps> = ({ receptor, onChange }) => {
+export const ReceptorForm: React.FC<ReceptorFormProps> = ({
+  receptor,
+  onChange,
+  catalogoVigente = false,
+  receptorOpcional = false,
+  datosContribuyente = false
+}) => {
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -55,13 +68,16 @@ export const ReceptorForm: React.FC<ReceptorFormProps> = ({ receptor, onChange }
     const dir = cliente.direccion || {};
     onChange({
       nit: cliente.num_documento || '',
+      tipoDocumento: cliente.tipo_documento || undefined,
       nrc: cliente.nrc || '',
       nombre: cliente.nombre || '',
+      nombreComercial: cliente.nombre_comercial || '',
       codActividad: cliente.cod_actividad || null,
       descActividad: cliente.desc_actividad || null,
       direccion: {
         departamento: dir.departamento || '06',
         municipio: dir.municipio || '14',
+        distrito: dir.distrito || '',
         complemento: dir.complemento || ''
       },
       telefono: cliente.telefono || '',
@@ -133,18 +149,43 @@ export const ReceptorForm: React.FC<ReceptorFormProps> = ({ receptor, onChange }
         )}
       </div>
 
+      {receptorOpcional && (
+        <p className="text-xs text-gray-500">
+          Para una venta a consumidor final puede dejar vacíos los datos del receptor.
+        </p>
+      )}
+
       {/* Grid de Formulario */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {catalogoVigente && !datosContribuyente && (
+          <div className="md:col-span-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+              Tipo de Documento
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+              value={receptor.tipoDocumento || ''}
+              onChange={(e) => handleChange('tipoDocumento', e.target.value || undefined)}
+            >
+              <option value="">Detectar según el número</option>
+              <option value="36">NIT</option>
+              <option value="13">DUI</option>
+              <option value="03">Pasaporte</option>
+              <option value="02">Carnet de Residente</option>
+              <option value="37">Otro</option>
+            </select>
+          </div>
+        )}
         <div>
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
-            Número de Documento (NIT/DUI) *
+            Número de Documento (NIT/DUI){receptorOpcional ? '' : ' *'}
           </label>
           <input
             type="text"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-primary-500 focus:border-primary-500"
             value={receptor.nit || ''}
             onChange={(e) => handleChange('nit', e.target.value)}
-            required
+            required={!receptorOpcional}
             placeholder="Ej. 0614-110285-102-4"
           />
         </div>
@@ -162,17 +203,57 @@ export const ReceptorForm: React.FC<ReceptorFormProps> = ({ receptor, onChange }
         </div>
         <div className="md:col-span-2">
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
-            Nombre / Razón Social *
+            Nombre / Razón Social{receptorOpcional ? '' : ' *'}
           </label>
           <input
             type="text"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500 font-semibold"
             value={receptor.nombre || ''}
             onChange={(e) => handleChange('nombre', e.target.value)}
-            required
+            required={!receptorOpcional}
             placeholder="Ej. Distribuidora El Salvador S.A."
           />
         </div>
+        {datosContribuyente && (
+          <>
+            <div className="md:col-span-2">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                Nombre Comercial
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+                value={receptor.nombreComercial || ''}
+                onChange={(e) => handleChange('nombreComercial', e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                Código de Actividad Económica *
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-primary-500 focus:border-primary-500"
+                value={receptor.codActividad || ''}
+                onChange={(e) => handleChange('codActividad', e.target.value)}
+                required
+                placeholder="Ej. 70200"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                Actividad Económica *
+              </label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+                value={receptor.descActividad || ''}
+                onChange={(e) => handleChange('descActividad', e.target.value)}
+                required
+              />
+            </div>
+          </>
+        )}
         <div>
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
             Correo Electrónico
@@ -197,43 +278,53 @@ export const ReceptorForm: React.FC<ReceptorFormProps> = ({ receptor, onChange }
             placeholder="Ej. 2222-2222"
           />
         </div>
-        <div>
-          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
-            Departamento *
-          </label>
-          <select
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
-            value={receptor.direccion?.departamento || ''}
-            onChange={(e) => handleDireccionChange('departamento', e.target.value)}
-          >
-            <option value="">Seleccione Departamento</option>
-            {CATALOGOS.departamentos.map(depto => (
-              <option key={depto.code} value={depto.code}>{depto.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
-            Municipio (Código MH) *
-          </label>
-          <input
-            type="text"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
-            value={receptor.direccion?.municipio || ''}
-            onChange={(e) => handleDireccionChange('municipio', e.target.value)}
-            placeholder="Ej. 14"
+        {catalogoVigente ? (
+          <DireccionSelects
+            valor={receptor.direccion}
+            requerido={!receptorOpcional}
+            onChange={(cambios) => onChange({ ...receptor, direccion: { ...receptor.direccion, ...cambios } })}
           />
-        </div>
+        ) : (
+          <>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+              Departamento *
+            </label>
+            <select
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+              value={receptor.direccion?.departamento || ''}
+              onChange={(e) => handleDireccionChange('departamento', e.target.value)}
+            >
+              <option value="">Seleccione Departamento</option>
+              {CATALOGOS.departamentos.map(depto => (
+                <option key={depto.code} value={depto.code}>{depto.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
+              Municipio (Código MH) *
+            </label>
+            <input
+              type="text"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
+              value={receptor.direccion?.municipio || ''}
+              onChange={(e) => handleDireccionChange('municipio', e.target.value)}
+              placeholder="Ej. 14"
+            />
+          </div>
+          </>
+        )}
         <div className="md:col-span-2">
           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider block mb-1">
-            Dirección Completa (Complemento) *
+            Dirección Completa (Complemento){receptorOpcional ? '' : ' *'}
           </label>
           <input
             type="text"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-primary-500 focus:border-primary-500"
             value={receptor.direccion?.complemento || ''}
             onChange={(e) => handleDireccionChange('complemento', e.target.value)}
-            required
+            required={!receptorOpcional}
             placeholder="Ej. Calle Principal N° 12, San Salvador"
           />
         </div>
