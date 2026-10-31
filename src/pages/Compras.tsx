@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ShoppingCart, Plus, Trash2, Calendar, FileText, User, Tag, 
-  DollarSign, Loader2, X, Check, Eye, ChevronDown, ChevronUp
+  DollarSign, Loader2, X, Check, Eye, ChevronDown, ChevronUp, Download
 } from 'lucide-react';
-import { obtenerCompras, crearCompra } from '../services/compra.service';
+import { obtenerCompras, crearCompra, descargarArchivoCompra } from '../services/compra.service';
+import { LecturaCorreo } from '../components/Compras/LecturaCorreo';
 
 export const Compras: React.FC = () => {
   const [compras, setCompras] = useState<any[]>([]);
@@ -14,7 +15,8 @@ export const Compras: React.FC = () => {
   // Modal y form state
   const [showModal, setShowModal] = useState(false);
   const [expandedCompraId, setExpandedCompraId] = useState<number | null>(null);
-  
+  const [mesFiltro, setMesFiltro] = useState('');
+
   // Form fields
   const [proveedorNombre, setProveedorNombre] = useState('');
   const [proveedorDocumento, setProveedorDocumento] = useState('');
@@ -27,9 +29,17 @@ export const Compras: React.FC = () => {
     { descripcion: '', cantidad: 1, precioUnitario: 0 }
   ]);
 
-  const fetchCompras = async () => {
+  const descargar = async (compra: any, tipo: 'json' | 'pdf') => {
     try {
-      setLoading(true);
+      await descargarArchivoCompra(compra, tipo);
+    } catch (err: any) {
+      alert(err.message || 'No se pudo descargar el archivo');
+    }
+  };
+
+  const fetchCompras = async (silencioso = false) => {
+    try {
+      if (!silencioso) setLoading(true);
       const res = await obtenerCompras();
       if (res.success) {
         setCompras(res.compras || []);
@@ -143,6 +153,10 @@ export const Compras: React.FC = () => {
     "15": "Comprobante Donación (15)"
   };
 
+  const comprasVisibles = compras.filter(c => !mesFiltro || String(c.fecha_compra).startsWith(mesFiltro));
+  // Una nota de crédito reduce lo comprado
+  const totalVisible = comprasVisibles.reduce((acc, c) => acc + (c.tipo_documento === '05' ? -1 : 1) * Number(c.monto_total), 0);
+
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
@@ -165,6 +179,30 @@ export const Compras: React.FC = () => {
         </div>
       )}
 
+      <LecturaCorreo alTerminar={() => fetchCompras(true)} />
+
+      {/* Resumen por mes */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-150 p-4">
+          <label htmlFor="mes-compras" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mes de la compra</label>
+          <input
+            id="mes-compras"
+            type="month"
+            value={mesFiltro}
+            onChange={(e) => setMesFiltro(e.target.value)}
+            className="block w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm"
+          />
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-150 p-4">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Documentos</div>
+          <div className="text-2xl font-black text-gray-900">{comprasVisibles.length}</div>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-150 p-4">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Total comprado</div>
+          <div className="text-2xl font-black text-gray-900">${totalVisible.toFixed(2)}</div>
+        </div>
+      </div>
+
       {/* Listado Compras */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-150 overflow-hidden">
         {loading ? (
@@ -172,7 +210,7 @@ export const Compras: React.FC = () => {
             <Loader2 className="h-10 w-10 text-primary-600 animate-spin mb-4" />
             <p className="text-gray-500 font-semibold">Cargando compras registradas...</p>
           </div>
-        ) : compras.length === 0 ? (
+        ) : comprasVisibles.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-center">
             <div className="bg-gray-50 p-4 rounded-full mb-4">
               <ShoppingCart className="h-10 w-10 text-gray-300" />
@@ -188,7 +226,7 @@ export const Compras: React.FC = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-200">
-            {compras.map((compra) => {
+            {comprasVisibles.map((compra) => {
               const isExpanded = expandedCompraId === compra.id;
               return (
                 <div key={compra.id} className="p-6 hover:bg-gray-50/40 transition-colors">
@@ -210,6 +248,21 @@ export const Compras: React.FC = () => {
                           <Calendar size={14} className="text-gray-400" /> 
                           {new Date(compra.fecha_compra).toLocaleDateString('es-SV', { timeZone: 'UTC' })}
                         </span>
+                        {compra.origen === 'CORREO' && (
+                          <span className="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded">Desde correo</span>
+                        )}
+                        {compra.observacion && (
+                          <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">{compra.observacion}</span>
+                        )}
+                        {compra.archivos?.map((archivo: any) => (
+                          <button
+                            key={archivo.tipo}
+                            onClick={() => descargar(compra, archivo.tipo.toLowerCase())}
+                            className="flex items-center gap-1 text-xs font-semibold text-primary-700 hover:underline"
+                          >
+                            <Download size={13} /> {archivo.tipo}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
