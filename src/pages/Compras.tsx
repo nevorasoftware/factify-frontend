@@ -7,6 +7,12 @@ import {
 import { obtenerCompras, crearCompra, descargarArchivoCompra } from '../services/compra.service';
 import { LecturaCorreo } from '../components/Compras/LecturaCorreo';
 
+const mesEnCurso = () => {
+  const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
+  const ultimoDia = new Date(Date.UTC(Number(hoy.slice(0, 4)), Number(hoy.slice(5, 7)), 0)).getUTCDate();
+  return { desde: `${hoy.slice(0, 8)}01`, hasta: `${hoy.slice(0, 8)}${ultimoDia}` };
+};
+
 export const Compras: React.FC = () => {
   const [compras, setCompras] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,7 +21,8 @@ export const Compras: React.FC = () => {
   // Modal y form state
   const [showModal, setShowModal] = useState(false);
   const [expandedCompraId, setExpandedCompraId] = useState<number | null>(null);
-  const [mesFiltro, setMesFiltro] = useState('');
+  const [desde, setDesde] = useState(() => mesEnCurso().desde);
+  const [hasta, setHasta] = useState(() => mesEnCurso().hasta);
 
   // Form fields
   const [proveedorNombre, setProveedorNombre] = useState('');
@@ -153,7 +160,16 @@ export const Compras: React.FC = () => {
     "15": "Comprobante Donación (15)"
   };
 
-  const comprasVisibles = compras.filter(c => !mesFiltro || String(c.fecha_compra).startsWith(mesFiltro));
+  const comprasVisibles = compras.filter(c => {
+    const fecha = String(c.fecha_compra).slice(0, 10);
+    return (!desde || fecha >= desde) && (!hasta || fecha <= hasta);
+  });
+  const rangoInvertido = !!desde && !!hasta && desde > hasta;
+  const verMesEnCurso = () => {
+    const mes = mesEnCurso();
+    setDesde(mes.desde);
+    setHasta(mes.hasta);
+  };
   // Una nota de crédito reduce lo comprado
   const totalVisible = comprasVisibles.reduce((acc, c) => acc + (c.tipo_documento === '05' ? -1 : 1) * Number(c.monto_total), 0);
 
@@ -181,17 +197,39 @@ export const Compras: React.FC = () => {
 
       <LecturaCorreo alTerminar={() => fetchCompras(true)} />
 
-      {/* Resumen por mes */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-150 p-4">
-          <label htmlFor="mes-compras" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Mes de la compra</label>
-          <input
-            id="mes-compras"
-            type="month"
-            value={mesFiltro}
-            onChange={(e) => setMesFiltro(e.target.value)}
-            className="block w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm"
-          />
+      {/* Resumen por fechas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="sm:col-span-2 bg-white rounded-xl shadow-sm border border-gray-150 p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 items-end">
+            <div>
+              <label htmlFor="compras-desde" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Desde</label>
+              <input
+                id="compras-desde"
+                type="date"
+                value={desde}
+                onChange={(e) => setDesde(e.target.value)}
+                className="block w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="compras-hasta" className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Hasta</label>
+              <input
+                id="compras-hasta"
+                type="date"
+                value={hasta}
+                onChange={(e) => setHasta(e.target.value)}
+                className="block w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={verMesEnCurso}
+              className="bg-primary-50 hover:bg-primary-100 text-primary-700 px-3 py-2 rounded-lg text-xs font-semibold transition-colors"
+            >
+              Mes en curso
+            </button>
+          </div>
+          {rangoInvertido && <p className="mt-2 text-xs text-red-600">La fecha "Desde" no puede ser posterior a "Hasta".</p>}
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-150 p-4">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Documentos</div>
@@ -215,8 +253,8 @@ export const Compras: React.FC = () => {
             <div className="bg-gray-50 p-4 rounded-full mb-4">
               <ShoppingCart className="h-10 w-10 text-gray-300" />
             </div>
-            <p className="text-gray-500 font-semibold text-lg mb-1">No hay compras registradas</p>
-            <p className="text-sm text-gray-400 mb-6">Registre las facturas o créditos fiscales que le emiten sus proveedores.</p>
+            <p className="text-gray-500 font-semibold text-lg mb-1">{compras.length === 0 ? 'No hay compras registradas' : 'No hay compras en estas fechas'}</p>
+            <p className="text-sm text-gray-400 mb-6">{compras.length === 0 ? 'Registre las facturas o créditos fiscales que le emiten sus proveedores.' : 'Cambie el rango de fechas para ver otras compras.'}</p>
             <button 
               onClick={handleOpenCreate}
               className="bg-primary-50 hover:bg-primary-100 text-primary-600 px-4 py-2 rounded-lg font-medium transition-colors"
