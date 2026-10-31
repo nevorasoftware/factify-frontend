@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Receipt, FileSpreadsheet, Truck,
   UserCheck, FileCode, GitBranch, DollarSign, HeartHandshake,
   AlertTriangle, FileWarning, Settings, LogOut, ChevronDown, ChevronUp,
-  FileBox, User, X
+  FileBox, User, X, BookOpen
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -141,6 +141,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               className={({ isActive }) => `flex items-center px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${isActive ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}
             >
               <Receipt className="mr-3 h-3.5 w-3.5" /> Compras
+            </NavLink>
+            <NavLink
+              to="/contabilidad"
+              onClick={handleLinkClick}
+              className={({ isActive }) => `flex items-center px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${isActive ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}
+            >
+              <BookOpen className="mr-3 h-3.5 w-3.5" /> Contabilidad
             </NavLink>
           </div>
         </div>

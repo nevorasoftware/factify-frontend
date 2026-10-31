@@ -21,6 +21,7 @@ import { Login } from './pages/Login';
 import { Clientes } from './pages/Clientes';
 import { Inventario } from './pages/Inventario';
 import { Compras } from './pages/Compras';
+import { Contabilidad } from './pages/Contabilidad';
 
 
 function App() {
@@ -76,6 +77,7 @@ function App() {
           <Route path="/clientes" element={<Clientes />} />
           <Route path="/inventario" element={<Inventario />} />
           <Route path="/compras" element={<Compras />} />
+          <Route path="/contabilidad" element={<Contabilidad />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Layout>
