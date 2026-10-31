@@ -3,6 +3,7 @@ import { Save, Shield, Settings, Eye, CheckSquare, Square, Info, Upload, Image a
 import { api } from '../services/api';
 import { Toast } from '../components/Common/Toast';
 import { DireccionSelects } from '../components/Forms/DireccionSelects';
+import { ConexionCorreo } from '../components/Configuracion/ConexionCorreo';
 
 export const ConfiguracionPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -414,6 +415,7 @@ export const ConfiguracionPage: React.FC = () => {
         </div>
 
       </form>
+      <ConexionCorreo />
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
     </div>
   );
