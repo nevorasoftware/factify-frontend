@@ -138,8 +138,8 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioI
       </div>
 
       <div className="overflow-visible" ref={dropdownRef}>
-        <table className="block md:table w-full md:min-w-full divide-y divide-gray-200">
-          <thead className="hidden md:table-header-group bg-gray-50">
+        <table className="block xl:table w-full xl:min-w-full divide-y divide-gray-200">
+          <thead className="hidden xl:table-header-group bg-gray-50">
             <tr>
               <th className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">#</th>
               <th className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider w-80">Descripción / Búsqueda</th>
@@ -151,12 +151,12 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioI
               <th className="px-3 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider"></th>
             </tr>
           </thead>
-          <tbody className="block md:table-row-group divide-y divide-gray-200 bg-white">
+          <tbody className="block xl:table-row-group divide-y divide-gray-200 bg-white">
             {items.map((item, idx) => (
-              <tr key={idx} className="grid grid-cols-2 gap-3 py-4 md:table-row md:py-0 hover:bg-gray-50/30 transition-colors">
-                <td className="px-0 py-0 md:px-3 md:py-4 order-1 md:order-none text-sm font-semibold text-gray-400 font-mono self-center"><span className="md:hidden">Ítem </span>{item.numItem}</td>
-                <td className="px-0 py-0 md:px-3 md:py-4 order-3 col-span-2 md:order-none relative">
-                  <span className="md:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Descripción</span>
+              <tr key={idx} className="grid grid-cols-2 gap-3 py-4 xl:table-row xl:py-0 hover:bg-gray-50/30 transition-colors">
+                <td className="px-0 py-0 xl:px-3 xl:py-4 order-1 xl:order-none text-sm font-semibold text-gray-400 font-mono self-center"><span className="xl:hidden">Ítem </span>{item.numItem}</td>
+                <td className="px-0 py-0 xl:px-3 xl:py-4 order-3 col-span-2 xl:order-none relative">
+                  <span className="xl:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Descripción</span>
                   <div className="relative">
                     <input
                       type="text"
@@ -181,7 +181,7 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioI
 
                   {/* Dropdown Autocomplete de Productos */}
                   {activeSearchIndex === idx && (
-                    <div className="absolute z-30 left-0 right-0 md:left-3 md:right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100">
+                    <div className="absolute z-30 left-0 right-0 xl:left-3 xl:right-3 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-52 overflow-y-auto divide-y divide-gray-100 animate-in fade-in zoom-in-95 duration-100">
                       {filteredProducts.length === 0 ? (
                         <div className="px-3 py-2 text-xs text-gray-500 italic">
                           No se encontraron productos en inventario
@@ -207,22 +207,22 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioI
                     </div>
                   )}
                 </td>
-                <td className="px-0 py-0 md:px-3 md:py-4 order-4 md:order-none">
-                  <span className="md:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Cantidad</span>
+                <td className="px-0 py-0 xl:px-3 xl:py-4 order-4 xl:order-none">
+                  <span className="xl:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Cantidad</span>
                   <input
                     type="number"
                     step="0.01"
-                    className="w-full md:w-20 rounded-lg border px-2 py-2 bg-white border-gray-300 text-sm font-mono text-center"
+                    className="w-full xl:w-20 rounded-lg border px-2 py-2 bg-white border-gray-300 text-sm font-mono text-center"
                     value={item.cantidad}
                     onChange={(e) => updateItem(idx, 'cantidad', parseFloat(e.target.value) || 0)}
                     required
                     min="0.01"
                   />
                 </td>
-                <td className="px-0 py-0 md:px-3 md:py-4 order-5 md:order-none min-w-0">
-                  <span className="md:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Unidad</span>
+                <td className="px-0 py-0 xl:px-3 xl:py-4 order-5 xl:order-none min-w-0">
+                  <span className="xl:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Unidad</span>
                   <select
-                    className="w-full md:w-28 rounded-lg border px-2 py-2 bg-white border-gray-300 text-sm"
+                    className="w-full xl:w-28 rounded-lg border px-2 py-2 bg-white border-gray-300 text-sm"
                     value={item.uniMedida}
                     onChange={(e) => updateItem(idx, 'uniMedida', parseInt(e.target.value))}
                   >
@@ -231,14 +231,14 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioI
                     ))}
                   </select>
                 </td>
-                <td className="px-0 py-0 md:px-3 md:py-4 order-6 md:order-none">
-                  <span className="md:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Precio</span>
+                <td className="px-0 py-0 xl:px-3 xl:py-4 order-6 xl:order-none">
+                  <span className="xl:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Precio</span>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-400 text-xs">$</span>
                     <input
                       type="number"
                       step="0.01"
-                      className="w-full md:w-28 rounded-lg border px-2 py-2 bg-white border-gray-300 text-sm pl-6 pr-2 font-mono font-semibold"
+                      className="w-full xl:w-28 rounded-lg border px-2 py-2 bg-white border-gray-300 text-sm pl-6 pr-2 font-mono font-semibold"
                       value={item.precioUni}
                       onChange={(e) => updateItem(idx, 'precioUni', parseFloat(e.target.value) || 0)}
                       required
@@ -246,25 +246,25 @@ export const ItemsTable: React.FC<ItemsTableProps> = ({ items, onChange, precioI
                     />
                   </div>
                 </td>
-                <td className="px-0 py-0 md:px-3 md:py-4 order-7 md:order-none">
-                  <span className="md:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Descuento</span>
+                <td className="px-0 py-0 xl:px-3 xl:py-4 order-7 xl:order-none">
+                  <span className="xl:hidden block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1">Descuento</span>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-gray-400 text-xs">$</span>
                     <input
                       type="number"
                       step="0.01"
-                      className="w-full md:w-24 rounded-lg border px-2 py-2 bg-white border-gray-300 text-sm pl-6 pr-2 font-mono"
+                      className="w-full xl:w-24 rounded-lg border px-2 py-2 bg-white border-gray-300 text-sm pl-6 pr-2 font-mono"
                       value={item.montoDescu}
                       onChange={(e) => updateItem(idx, 'montoDescu', parseFloat(e.target.value) || 0)}
                       min="0"
                     />
                   </div>
                 </td>
-                <td className="px-0 py-0 md:px-3 md:py-4 order-8 col-span-2 md:order-none flex justify-between items-center md:table-cell text-sm font-black text-gray-900 font-mono">
-                  <span className="md:hidden font-sans text-xs font-bold text-gray-500 uppercase tracking-wider">Total</span>
+                <td className="px-0 py-0 xl:px-3 xl:py-4 order-8 col-span-2 xl:order-none flex justify-between items-center xl:table-cell text-sm font-black text-gray-900 font-mono">
+                  <span className="xl:hidden font-sans text-xs font-bold text-gray-500 uppercase tracking-wider">Total</span>
                   ${formatCurrency(item.ventaGravada)}
                 </td>
-                <td className="px-0 py-0 md:px-3 md:py-4 order-2 md:order-none text-right">
+                <td className="px-0 py-0 xl:px-3 xl:py-4 order-2 xl:order-none text-right">
                   <button
                     type="button"
                     aria-label="Quitar ítem"
