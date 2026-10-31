@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { Toast } from '../components/Common/Toast';
 import { DireccionSelects } from '../components/Forms/DireccionSelects';
 import { ConexionCorreo } from '../components/Configuracion/ConexionCorreo';
+import { CambiarPassword } from '../components/Configuracion/CambiarPassword';
 
 export const ConfiguracionPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -35,6 +36,7 @@ export const ConfiguracionPage: React.FC = () => {
 
   // DTEs Visibles
   const [dtesVisibles, setDtesVisibles] = useState<string[]>(["01", "03", "11"]);
+  const [esAdmin, setEsAdmin] = useState(false);
 
   const allDtes = [
     { code: '01', name: 'Factura (01)' },
@@ -82,6 +84,7 @@ export const ConfiguracionPage: React.FC = () => {
         
         setPwdMh('');
         setPwdFirmador('');
+        setEsAdmin(!!data.esAdmin);
 
         if (data.dtesVisibles) {
           setDtesVisibles(data.dtesVisibles);
@@ -134,6 +137,7 @@ export const ConfiguracionPage: React.FC = () => {
   };
 
   const handleDteToggle = (code: string) => {
+    if (!esAdmin) return;
     if (dtesVisibles.includes(code)) {
       setDtesVisibles(dtesVisibles.filter(c => c !== code));
     } else {
@@ -152,8 +156,7 @@ export const ConfiguracionPage: React.FC = () => {
         descActividad,
         direccion: { departamento, municipio, distrito, complemento },
         telefono,
-        dtesVisibles,
-        ambiente,
+        ...(esAdmin ? { dtesVisibles } : {}),
         codEstablecimientoMh,
         codPuntoVentaMh,
         logoUrl
@@ -198,7 +201,7 @@ export const ConfiguracionPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6">
+    <div className="max-w-4xl mx-auto sm:px-4 py-2 sm:py-6">
       {/* Title block */}
       <div className="flex items-center gap-3 mb-6 bg-white border border-gray-200 p-5 rounded-2xl shadow-sm">
         <div className="bg-blue-100 text-blue-600 p-2.5 rounded-xl">
@@ -299,8 +302,9 @@ export const ConfiguracionPage: React.FC = () => {
               <input className="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" value={telefono} onChange={e => setTelefono(e.target.value)} required />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Correo de Facturación</label>
-              <input className="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors" type="email" value={correo} onChange={e => setCorreo(e.target.value)} required />
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Correo de Facturación y acceso</label>
+              <input className="w-full bg-gray-100 border border-gray-200 text-gray-500 rounded-xl py-2.5 px-4 text-sm font-semibold focus:outline-none cursor-not-allowed" type="email" value={correo} readOnly />
+              <p className="text-[11px] text-gray-500 mt-1">Es tu usuario de ingreso. Para cambiarlo, contacta a Nevora.</p>
             </div>
           </div>
         </div>
@@ -348,10 +352,8 @@ export const ConfiguracionPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div>
               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Ambiente Ministerio de Hacienda</label>
-              <select className="w-full bg-gray-50 border border-gray-200 text-gray-950 rounded-xl py-2.5 px-4 text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors font-bold" value={ambiente} onChange={e => setAmbiente(e.target.value)} required>
-                <option value="00" className="text-amber-600 font-bold">00 - PRUEBAS</option>
-                <option value="01" className="text-emerald-600 font-bold">01 - PRODUCCIÓN</option>
-              </select>
+              <input className="w-full bg-gray-100 border border-gray-200 text-gray-500 rounded-xl py-2.5 px-4 text-sm font-bold cursor-not-allowed" value={ambiente === '01' ? '01 - PRODUCCIÓN' : '00 - PRUEBAS'} readOnly />
+              <p className="text-[11px] text-gray-500 mt-1">{esAdmin ? 'Se cambia en el menú Empresas.' : 'El cambio de ambiente lo realiza Nevora.'}</p>
             </div>
             
             <div className="grid grid-cols-2 gap-3">
@@ -382,10 +384,10 @@ export const ConfiguracionPage: React.FC = () => {
             <Eye size={18} className="text-blue-600" />
             <span>Documentos Tributarios Electrónicos (DTEs) Habilitados</span>
           </h2>
-          <p className="text-xs text-gray-500">Selecciona los tipos de documentos tributarios autorizados por el MH para este emisor. Los documentos desactivados no se mostrarán en tu menú de navegación lateral.</p>
+          <p className="text-xs text-gray-500">{esAdmin ? 'Selecciona los tipos de documentos tributarios autorizados por el MH para este emisor. Los documentos desactivados no se mostrarán en tu menú de navegación lateral.' : 'Documentos autorizados por Hacienda para tu empresa. Para cambiarlos, contacta a Nevora.'}</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-            {allDtes.map((dte) => {
+            {allDtes.filter(dte => esAdmin || dtesVisibles.includes(dte.code)).map((dte) => {
               const isChecked = dtesVisibles.includes(dte.code);
               return (
                 <div 
@@ -416,6 +418,7 @@ export const ConfiguracionPage: React.FC = () => {
 
       </form>
       <ConexionCorreo />
+      <CambiarPassword />
       {toast && <Toast {...toast} onClose={() => setToast(null)} />}
     </div>
   );

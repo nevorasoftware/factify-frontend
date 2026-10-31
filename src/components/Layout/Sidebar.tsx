@@ -4,7 +4,7 @@ import {
   LayoutDashboard, FileText, Receipt, FileSpreadsheet, Truck,
   UserCheck, FileCode, GitBranch, DollarSign, HeartHandshake,
   AlertTriangle, FileWarning, Settings, LogOut, ChevronDown, ChevronUp,
-  FileBox, User, X, BookOpen, ClipboardCheck
+  FileBox, User, X, BookOpen, ClipboardCheck, Building2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -214,7 +214,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
 
         {/* Global Settings */}
         <div className="pt-3 border-t border-slate-800 space-y-0.5">
-          <NavLink 
+          {emisor?.esAdmin && (
+            <NavLink
+              to="/empresas"
+              onClick={handleLinkClick}
+              className={({ isActive }) => `flex items-center px-3 py-2 text-xs font-semibold rounded-lg transition-colors ${isActive ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}
+            >
+              <Building2 className="mr-3 h-4 w-4" /> Empresas
+            </NavLink>
+          )}
+          <NavLink
             to="/configuracion" 
             onClick={handleLinkClick}
             className={({ isActive }) => `flex items-center px-3 py-2 text-xs font-semibold rounded-lg transition-colors ${isActive ? 'bg-blue-600/10 text-blue-400 border border-blue-900/30' : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'}`}

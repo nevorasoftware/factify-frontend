@@ -10,8 +10,18 @@ import {
 } from 'lucide-react';
 import { obtenerDashboardStats, obtenerDteInfo, reenviarCorreoDte, reenviarWhatsappDte } from '../services/dte.service';
 
+const ACCESOS_RAPIDOS = [
+  { codigo: '01', ruta: '/factura', nombre: 'Factura', fondo: 'bg-blue-50', color: 'text-blue-600', icono: FileText },
+  { codigo: '03', ruta: '/ccf', nombre: 'Crédito Fiscal', fondo: 'bg-indigo-50', color: 'text-indigo-600', icono: Receipt },
+  { codigo: '04', ruta: '/nota-remision', nombre: 'Nota de Remisión', fondo: 'bg-yellow-50', color: 'text-yellow-600', icono: Truck },
+  { codigo: '05', ruta: '/nota-credito', nombre: 'Nota de Crédito', fondo: 'bg-purple-50', color: 'text-purple-600', icono: FileSpreadsheet },
+  { codigo: '11', ruta: '/factura-exportacion', nombre: 'Exportación', fondo: 'bg-green-50', color: 'text-green-600', icono: DollarSign },
+  { codigo: '14', ruta: '/factura-sujeto-excluido', nombre: 'Sujeto Excluido', fondo: 'bg-slate-50', color: 'text-slate-600', icono: UserCheck },
+];
+
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const dtesAutorizados: string[] = JSON.parse(localStorage.getItem('emisor') || '{}').dtesVisibles || [];
   const [stats, setStats] = useState<any>({
     total: 0,
     montoTotal: 0,
@@ -123,14 +133,14 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex justify-between items-end mb-8">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
           <p className="text-gray-500 mt-1">Resumen de facturación electrónica</p>
         </div>
         <button
           onClick={() => navigate('/factura')}
-          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium transition-colors shadow-sm"
+          className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors shadow-sm"
         >
           <Plus size={18} /> Nuevo Documento
         </button>
@@ -239,6 +249,7 @@ export const Dashboard: React.FC = () => {
             <h3 className="font-semibold text-gray-900 mb-6">Por Tipo de DTE</h3>
             <div className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
               {Object.entries(conteoPorTipo)
+                .filter(([key, count]) => count > 0 || dtesAutorizados.includes(key))
                 .sort((a, b) => b[1] - a[1])
                 .map(([key, count]) => {
                   const meta = tipoDteMetaMap[key];
@@ -267,65 +278,17 @@ export const Dashboard: React.FC = () => {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:col-span-2">
           <h3 className="font-semibold text-gray-900 mb-6">Accesos Rápidos</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Link to="/factura" className="flex items-center p-3.5 rounded-xl border border-gray-100 hover:border-primary-100 hover:bg-primary-50/50 transition-all hover:shadow-xs group">
-              <div className="bg-blue-50 p-2.5 rounded-xl text-blue-600 transition-colors">
-                <FileText size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-bold text-gray-800">Factura</p>
-                <p className="text-[10px] text-gray-400 font-mono mt-0.5">DTE-01</p>
-              </div>
-            </Link>
-
-            <Link to="/ccf" className="flex items-center p-3.5 rounded-xl border border-gray-100 hover:border-primary-100 hover:bg-primary-50/50 transition-all hover:shadow-xs group">
-              <div className="bg-indigo-50 p-2.5 rounded-xl text-indigo-600 transition-colors">
-                <Receipt size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-bold text-gray-800">Crédito Fiscal</p>
-                <p className="text-[10px] text-gray-400 font-mono mt-0.5">DTE-03</p>
-              </div>
-            </Link>
-
-            <Link to="/nota-remision" className="flex items-center p-3.5 rounded-xl border border-gray-100 hover:border-primary-100 hover:bg-primary-50/50 transition-all hover:shadow-xs group">
-              <div className="bg-yellow-50 p-2.5 rounded-xl text-yellow-600 transition-colors">
-                <Truck size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-bold text-gray-800">Nota de Remisión</p>
-                <p className="text-[10px] text-gray-400 font-mono mt-0.5">DTE-04</p>
-              </div>
-            </Link>
-
-            <Link to="/nota-credito" className="flex items-center p-3.5 rounded-xl border border-gray-100 hover:border-primary-100 hover:bg-primary-50/50 transition-all hover:shadow-xs group">
-              <div className="bg-purple-50 p-2.5 rounded-xl text-purple-600 transition-colors">
-                <FileSpreadsheet size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-bold text-gray-800">Nota de Crédito</p>
-                <p className="text-[10px] text-gray-400 font-mono mt-0.5">DTE-05</p>
-              </div>
-            </Link>
-
-            <Link to="/factura-exportacion" className="flex items-center p-3.5 rounded-xl border border-gray-100 hover:border-primary-100 hover:bg-primary-50/50 transition-all hover:shadow-xs group">
-              <div className="bg-green-50 p-2.5 rounded-xl text-green-600 transition-colors">
-                <DollarSign size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-bold text-gray-800">Exportación</p>
-                <p className="text-[10px] text-gray-400 font-mono mt-0.5">DTE-11</p>
-              </div>
-            </Link>
-
-            <Link to="/factura-sujeto-excluido" className="flex items-center p-3.5 rounded-xl border border-gray-100 hover:border-primary-100 hover:bg-primary-50/50 transition-all hover:shadow-xs group">
-              <div className="bg-slate-50 p-2.5 rounded-xl text-slate-600 transition-colors">
-                <UserCheck size={20} />
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-bold text-gray-800">Sujeto Excluido</p>
-                <p className="text-[10px] text-gray-400 font-mono mt-0.5">DTE-14</p>
-              </div>
-            </Link>
+            {ACCESOS_RAPIDOS.filter(a => dtesAutorizados.includes(a.codigo)).map(a => (
+              <Link key={a.codigo} to={a.ruta} className="flex items-center p-3.5 rounded-xl border border-gray-100 hover:border-primary-100 hover:bg-primary-50/50 transition-all hover:shadow-xs group">
+                <div className={`${a.fondo} p-2.5 rounded-xl ${a.color} transition-colors`}>
+                  <a.icono size={20} />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-bold text-gray-800">{a.nombre}</p>
+                  <p className="text-[10px] text-gray-400 font-mono mt-0.5">DTE-{a.codigo}</p>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
       </div>
@@ -355,7 +318,23 @@ export const Dashboard: React.FC = () => {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6">
+          <>
+          <div className="md:hidden divide-y divide-gray-100 -my-2">
+            {dtesRecientes.map((dte) => (
+              <button key={dte.id} type="button" onClick={() => handleVerDetalle(dte.codigo_generacion)} className="w-full text-left py-3">
+                <div className="flex justify-between gap-3 items-start">
+                  <span className="text-sm font-semibold text-gray-900 truncate">{dte.cliente?.nombre || 'Consumidor Final'}</span>
+                  <span className="text-sm font-bold text-gray-900 shrink-0">${Number(dte.total_pagar).toFixed(2)}</span>
+                </div>
+                <p className="text-[11px] text-gray-500 font-mono mt-1 [overflow-wrap:anywhere]">{dte.numero_control}</p>
+                <div className="flex justify-between items-center mt-1.5">
+                  <span className="text-xs text-gray-500">{new Date(dte.fecha_emision).toLocaleDateString('es-SV', { timeZone: 'UTC' })}</span>
+                  <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full uppercase ${dte.estado === 'PROCESADO' ? 'bg-green-50 text-green-700' : dte.estado === 'RECHAZADO' ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-700'}`}>{dte.estado}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="hidden md:block overflow-x-auto -mx-6">
             <div className="inline-block min-w-full align-middle px-6">
               <div className="overflow-hidden border border-gray-150 rounded-lg">
                 <table className="min-w-full divide-y divide-gray-200">
@@ -432,6 +411,7 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
           </div>
+          </>
         )}
       </div>
 

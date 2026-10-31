@@ -195,7 +195,23 @@ export const Inventario: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="md:hidden divide-y divide-gray-100">
+            {filteredProductos.map((prod) => (
+              <div key={prod.id} className="p-4 flex justify-between gap-3 items-start">
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-950 [overflow-wrap:anywhere]">{prod.descripcion}</p>
+                  <p className="text-xs text-gray-500 font-mono mt-1">{prod.codigo} · {prod.tipo_item === 1 ? 'Bien' : 'Servicio'}</p>
+                  <p className="text-sm font-bold text-gray-900 mt-1">${Number(prod.precio_unitario).toFixed(2)}</p>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => handleOpenEdit(prod)} className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg" aria-label="Editar"><Edit2 size={16} /></button>
+                  <button onClick={() => handleDelete(prod.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" aria-label="Eliminar"><Trash2 size={16} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -254,6 +270,7 @@ export const Inventario: React.FC = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

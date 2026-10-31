@@ -23,19 +23,44 @@ import { Inventario } from './pages/Inventario';
 import { Compras } from './pages/Compras';
 import { Contabilidad } from './pages/Contabilidad';
 import { PruebasHacienda } from './pages/PruebasHacienda';
+import { Restablecer } from './pages/Restablecer';
+import { Empresas } from './pages/Empresas';
+import { api } from './services/api';
 
+const leerEmisor = () => JSON.parse(localStorage.getItem('emisor') || '{}');
+
+// Una empresa solo entra a los documentos que Hacienda le autorizó.
+const RutaDte: React.FC<{ codigo: string; children: React.ReactElement }> = ({ codigo, children }) => (
+  (leerEmisor().dtesVisibles || []).includes(codigo) ? children : <Navigate to="/" replace />
+);
+
+const SoloAdmin: React.FC<{ children: React.ReactElement }> = ({ children }) => (
+  leerEmisor().esAdmin ? children : <Navigate to="/" replace />
+);
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [, setPerfilActualizado] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       setIsAuthenticated(true);
+      // Los datos guardados pueden ser viejos: ambiente y documentos los define el servidor
+      api.get('/auth/me').then(res => {
+        if (res.data.success) {
+          localStorage.setItem('emisor', JSON.stringify(res.data.emisor));
+          setPerfilActualizado(v => v + 1);
+        }
+      }).catch(() => {});
     }
     setLoading(false);
   }, []);
+
+  if (window.location.pathname === '/restablecer') {
+    return <Restablecer />;
+  }
 
   const handleLoginSuccess = (token: string, emisor: any) => {
     localStorage.setItem('token', token);
@@ -60,17 +85,18 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/factura" element={<FacturaPage />} />
-          <Route path="/ccf" element={<CCFPage />} />
-          <Route path="/nota-credito" element={<NotaCreditoPage />} />
-          <Route path="/nota-debito" element={<NotaDebitoPage />} />
-          <Route path="/nota-remision" element={<NotaRemisionPage />} />
-          <Route path="/comprobante-retencion" element={<ComprobanteRetencionPage />} />
-          <Route path="/comprobante-liquidacion" element={<ComprobanteLiquidacionPage />} />
-          <Route path="/documento-contable-liquidacion" element={<DocumentoContableLiquidacionPage />} />
-          <Route path="/factura-exportacion" element={<FacturaExportacionPage />} />
-          <Route path="/factura-sujeto-excluido" element={<FacturaSujetoExcluidoPage />} />
-          <Route path="/comprobante-donacion" element={<ComprobanteDonacionPage />} />
+          <Route path="/factura" element={<RutaDte codigo="01"><FacturaPage /></RutaDte>} />
+          <Route path="/ccf" element={<RutaDte codigo="03"><CCFPage /></RutaDte>} />
+          <Route path="/nota-credito" element={<RutaDte codigo="05"><NotaCreditoPage /></RutaDte>} />
+          <Route path="/nota-debito" element={<RutaDte codigo="06"><NotaDebitoPage /></RutaDte>} />
+          <Route path="/nota-remision" element={<RutaDte codigo="04"><NotaRemisionPage /></RutaDte>} />
+          <Route path="/comprobante-retencion" element={<RutaDte codigo="07"><ComprobanteRetencionPage /></RutaDte>} />
+          <Route path="/comprobante-liquidacion" element={<RutaDte codigo="08"><ComprobanteLiquidacionPage /></RutaDte>} />
+          <Route path="/documento-contable-liquidacion" element={<RutaDte codigo="09"><DocumentoContableLiquidacionPage /></RutaDte>} />
+          <Route path="/factura-exportacion" element={<RutaDte codigo="11"><FacturaExportacionPage /></RutaDte>} />
+          <Route path="/factura-sujeto-excluido" element={<RutaDte codigo="14"><FacturaSujetoExcluidoPage /></RutaDte>} />
+          <Route path="/comprobante-donacion" element={<RutaDte codigo="15"><ComprobanteDonacionPage /></RutaDte>} />
+          <Route path="/empresas" element={<SoloAdmin><Empresas /></SoloAdmin>} />
           <Route path="/consulta" element={<ConsultaPage />} />
           <Route path="/contingencia" element={<EventoContingenciaPage />} />
           <Route path="/invalidacion" element={<EventoInvalidacionPage />} />

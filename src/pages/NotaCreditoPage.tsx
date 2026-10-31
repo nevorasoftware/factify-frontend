@@ -163,7 +163,7 @@ export const NotaCreditoPage: React.FC = () => {
           </div>
           <div className="space-y-4">
             {documentosRelacionados.map((doc, idx) => (
-              <div key={idx} className="flex gap-4 items-end bg-gray-50 p-4 rounded-lg">
+              <div key={idx} className="flex flex-col md:flex-row gap-4 md:items-end bg-gray-50 p-4 rounded-lg">
                 <div className="flex-1">
                   <label className="label">Tipo Documento</label>
                   <input type="text" className="input bg-gray-100 cursor-not-allowed" value="CCF (03)" disabled readOnly />
@@ -178,7 +178,7 @@ export const NotaCreditoPage: React.FC = () => {
                 <div className="flex-2">
                   <label className="label">Número Documento / Código Generación</label>
                   <div className="flex gap-2">
-                    <input type="text" className="input flex-1" value={doc.numeroDocumento} onChange={(e) => updateDocumentoRelacionado(idx, 'numeroDocumento', e.target.value)} required placeholder="UUID del CCF original" />
+                    <input type="text" className="input flex-1 min-w-0" value={doc.numeroDocumento} onChange={(e) => updateDocumentoRelacionado(idx, 'numeroDocumento', e.target.value)} required placeholder="UUID del CCF original" />
                     <button type="button" onClick={() => handleSearchDte(idx)} className="btn-secondary px-3 flex items-center justify-center gap-1 text-sm font-medium whitespace-nowrap bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors" disabled={searchingDte}>
                       {searchingDte ? <LoadingSpinner /> : <Search size="16" />} Buscar
                     </button>

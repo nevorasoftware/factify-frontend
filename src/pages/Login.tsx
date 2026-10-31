@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { api } from '../services/api';
-import { Lock, Mail, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { Lock, Mail, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface LoginProps {
   onLoginSuccess: (token: string, emisor: any) => void;
@@ -11,6 +11,26 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [vista, setVista] = useState<'ingresar' | 'recuperar' | 'enviado'>('ingresar');
+
+  const cambiarVista = (nueva: 'ingresar' | 'recuperar') => {
+    setVista(nueva);
+    setError(null);
+  };
+
+  const handleRecuperar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    try {
+      await api.post('/auth/recuperar', { correo });
+      setVista('enviado');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'No se pudo procesar la solicitud. Intenta de nuevo.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +69,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-indigo-950/30 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-md border border-slate-800 p-8 rounded-2xl shadow-2xl relative z-10">
+      <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-md border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-2xl relative z-10">
         
         {/* Header / Brand */}
         <div className="flex flex-col items-center mb-8">
@@ -67,6 +87,46 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </div>
         )}
 
+        {vista === 'enviado' && (
+          <div className="text-center">
+            <CheckCircle className="mx-auto text-emerald-400 mb-3" size={36} />
+            <h2 className="text-lg font-bold text-white">Revisa tu correo</h2>
+            <p className="text-sm text-slate-400 mt-2">Si {correo} está registrado, recibirás un enlace para crear una nueva contraseña. Vence en 60 minutos. Revisa también la carpeta de spam.</p>
+            <button type="button" onClick={() => cambiarVista('ingresar')} className="mt-6 text-sm font-medium text-blue-400 hover:text-blue-300">Volver a ingresar</button>
+          </div>
+        )}
+
+        {vista === 'recuperar' && (
+          <form onSubmit={handleRecuperar} className="space-y-5">
+            <div>
+              <h2 className="text-lg font-bold text-white">¿Olvidaste tu contraseña?</h2>
+              <p className="text-sm text-slate-400 mt-1">Escribe el correo de tu cuenta y te enviaremos un enlace para crear una nueva.</p>
+            </div>
+            <div>
+              <label htmlFor="correo-recuperar" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Correo Electrónico</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500"><Mail size={18} /></span>
+                <input
+                  id="correo-recuperar"
+                  type="email"
+                  required
+                  autoComplete="email"
+                  className="w-full bg-slate-950/80 border border-slate-800 rounded-xl py-3 pl-10 pr-4 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="correo@empresa.com"
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                />
+              </div>
+            </div>
+            <button type="submit" disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800 text-white font-medium py-3 rounded-xl flex items-center justify-center gap-2">
+              {isLoading && <Loader2 className="animate-spin" size={18} />}
+              Enviar enlace
+            </button>
+            <button type="button" onClick={() => cambiarVista('ingresar')} className="w-full text-sm font-medium text-slate-400 hover:text-slate-200">Volver a ingresar</button>
+          </form>
+        )}
+
+        {vista === 'ingresar' && (
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
@@ -92,6 +152,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
                 Contraseña
               </label>
+              <button type="button" onClick={() => cambiarVista('recuperar')} className="text-xs font-medium text-blue-400 hover:text-blue-300">
+                ¿Olvidaste tu contraseña?
+              </button>
             </div>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
@@ -123,6 +186,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             )}
           </button>
         </form>
+        )}
       </div>
 
       <div className="text-slate-500 text-[11px] mt-8 text-center relative z-10">

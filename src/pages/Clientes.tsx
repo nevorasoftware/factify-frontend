@@ -233,7 +233,28 @@ export const Clientes: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="md:hidden divide-y divide-gray-100">
+            {filteredClientes.map((cliente) => (
+              <div key={cliente.id} className="p-4">
+                <div className="flex justify-between gap-3 items-start">
+                  <div className="min-w-0">
+                    <p className="font-bold text-gray-900 [overflow-wrap:anywhere]">{cliente.nombre}</p>
+                    <p className="text-xs text-gray-600 font-mono mt-1">
+                      {cliente.tipo_documento === '36' ? 'NIT' : cliente.tipo_documento === '13' ? 'DUI' : 'OTRO'} {cliente.num_documento}{cliente.nrc ? ` · NRC ${cliente.nrc}` : ''}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={() => handleOpenEdit(cliente)} className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg" aria-label="Editar"><Edit2 size={16} /></button>
+                    <button onClick={() => handleDelete(cliente.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg" aria-label="Eliminar"><Trash2 size={16} /></button>
+                  </div>
+                </div>
+                {cliente.correo && <p className="flex items-center gap-1.5 text-xs text-gray-600 mt-2 min-w-0"><Mail size={13} className="text-gray-400 shrink-0" /><span className="truncate">{cliente.correo}</span></p>}
+                {cliente.telefono && <p className="flex items-center gap-1.5 text-xs text-gray-500 mt-1"><Phone size={13} className="text-gray-400 shrink-0" />{cliente.telefono}</p>}
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -307,6 +328,7 @@ export const Clientes: React.FC = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 

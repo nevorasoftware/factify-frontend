@@ -45,7 +45,7 @@ export const TotalesCard: React.FC<TotalesCardProps> = ({
       <div>
         <label className="label">Condición de la Operación</label>
         <select
-          className="input w-48"
+          className="input w-full sm:w-48"
           value={condicionOperacion}
           onChange={(e) => onCondicionChange(parseInt(e.target.value))}
         >
@@ -67,9 +67,9 @@ export const TotalesCard: React.FC<TotalesCardProps> = ({
           </button>
         </div>
         {pagos.map((pago, idx) => (
-          <div key={idx} className="flex gap-2 mb-2">
+          <div key={idx} className="flex flex-wrap gap-2 mb-2">
             <select
-              className="input w-40"
+              className="input w-full sm:w-40"
               value={pago.codigo}
               onChange={(e) => handlePagoChange(idx, 'codigo', e.target.value)}
             >
@@ -80,7 +80,7 @@ export const TotalesCard: React.FC<TotalesCardProps> = ({
             <input
               type="number"
               step="0.01"
-              className="input w-32"
+              className="input w-full sm:w-32"
               placeholder="Monto"
               value={pago.montoPago}
               onChange={(e) => handlePagoChange(idx, 'montoPago', parseFloat(e.target.value) || 0)}
