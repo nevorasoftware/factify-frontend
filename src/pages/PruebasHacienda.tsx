@@ -20,7 +20,7 @@ const ahora = () => {
 const motivoDe = (dato: any) => {
   const obs = dato?.resultado?.observaciones;
   const detalle = Array.isArray(obs) && obs.length ? ` (${obs.join('; ')})` : '';
-  return `${dato?.error || dato?.resultado?.descripcionMsg || 'Rechazado'}${detalle}`;
+  return `${dato?.resultado?.descripcionMsg || dato?.error || 'Rechazado'}${detalle}`;
 };
 
 const aceptado = (dato: any) => dato?.success && (dato.selloRecibido || dato.resultado?.estado === 'PROCESADO');

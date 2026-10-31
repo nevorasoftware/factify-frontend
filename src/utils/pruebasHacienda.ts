@@ -65,11 +65,11 @@ export const TIPOS_PRUEBA: TipoPrueba[] = [
   { clave: 'factura', nombre: 'Factura', ruta: 'factura', cuerpo: c => facturaPrueba(c) },
   {
     clave: 'nota-credito', nombre: 'Nota de Crédito', ruta: 'nota-credito',
-    cuerpo: c => ({ receptor: receptorCliente(c), documentoRelacionado: relacionado(c), cuerpoDocumento: [item('NC', 0.01)], resumen: {} })
+    cuerpo: c => ({ receptor: receptorCliente(c), documentoRelacionado: relacionado(c), cuerpoDocumento: [item('NC', 0.5)], resumen: {} })
   },
   {
     clave: 'nota-debito', nombre: 'Nota de Débito', ruta: 'nota-debito',
-    cuerpo: c => ({ receptor: receptorCliente(c), documentoRelacionado: relacionado(c), cuerpoDocumento: [item('ND', 0.01)], resumen: {} })
+    cuerpo: c => ({ receptor: receptorCliente(c), documentoRelacionado: relacionado(c), cuerpoDocumento: [item('ND', 0.5)], resumen: {} })
   },
   {
     clave: 'nota-remision', nombre: 'Nota de Remisión', ruta: 'nota-remision',

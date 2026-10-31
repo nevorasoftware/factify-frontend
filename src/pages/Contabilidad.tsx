@@ -14,7 +14,7 @@ const TIPOS_INGRESO = [[1, 'Profesiones, artes y oficios'], [2, 'Actividades de 
 const CLASE_CAMPO = 'block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500 text-sm';
 const CLASE_ETIQUETA = 'block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1';
 
-const dinero = (valor: number) => `$${Number(valor || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const dinero = (valor: number) => `${Number(valor) < 0 ? '-' : ''}$${Math.abs(Number(valor || 0)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const mensajeDe = (err: any, alterno: string) => err.response?.data?.error || err.message || alterno;
 const periodoActual = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' }).slice(0, 7);
 const escapar = (texto: any) => String(texto ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
@@ -290,7 +290,7 @@ export const Contabilidad: React.FC = () => {
                       {libroActivo.filas.map((fila: any, indice: number) => (
                         <tr key={indice} className={fila.alertas?.length ? 'bg-amber-50/60' : ''}>
                           {libroActivo.vista.map((i: number) => (
-                            <td key={i} className={`px-3 py-2 ${esNumero(fila.valores[i]) ? 'text-right font-mono whitespace-nowrap' : 'text-gray-700 break-all min-w-[7rem]'}`}>{fila.valores[i]}</td>
+                            <td key={i} className={`px-3 py-2 ${esNumero(fila.valores[i]) ? 'text-right font-mono whitespace-nowrap' : 'text-gray-700 [overflow-wrap:anywhere] min-w-[7rem]'}`}>{fila.valores[i]}</td>
                           ))}
                           {libroActivo.clave === 'compras' && (
                             <td className="px-3 py-2 text-right">
